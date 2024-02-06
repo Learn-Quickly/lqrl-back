@@ -18,7 +18,7 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 
 # Set the working directory inside the container
-WORKDIR /lqrl-back
+# WORKDIR /lqrl-back
 
 # Copy the built binary from the builder stage to the final image
 COPY --from=builder /app/target/release/lqrl-back .
@@ -26,5 +26,5 @@ COPY --from=builder /app/target/release/lqrl-back .
 # Expose the port your Actix-web application will listen on
 EXPOSE 8888
 
-# Define the command to run your application
-CMD ["./lqrl-back"]
+# # Define the command to run your application
+# CMD ["./lqrl-back"]
