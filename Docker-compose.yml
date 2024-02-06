@@ -1,0 +1,26 @@
+version: "3.4"
+services:
+  web_server:
+    build:
+      context: .
+      cache_from:
+        - rust:latest
+    networks:
+      - actix_api
+    volumes:
+      - ./:/app
+    tty: true
+    ports:
+      - "8888:8888"
+  db:
+    image: postgres:16.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+networks:
+  axum_api:
+    driver: bridge
+
+volumes:
+  postgres_data:

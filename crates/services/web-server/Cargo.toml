@@ -16,7 +16,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_with = { workspace = true }
 # -- Web
-axum = {version = "0.7", features = ["macros"]}
+axum = { version = "0.7", features = ["macros", "multipart"] }
 tower-http = { version = "0.5", features = ["fs"] }
 tower-cookies = "0.10"
 # -- Tracing
@@ -27,6 +27,8 @@ time = "0.3"
 uuid = {version = "1", features = ["v4","fast-rng",]}
 strum_macros = "0.26"
 derive_more = { workspace = true }
+image = "0.24.8"
+fast_image_resize = "3.0.1"
 
 [dev-dependencies]
 httpc-test = "0.1"
