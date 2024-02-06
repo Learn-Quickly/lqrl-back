@@ -6,7 +6,7 @@ services:
       cache_from:
         - rust:latest
     networks:
-      - actix_api
+      - axum_api
     volumes:
       - ./:/app
     tty: true
