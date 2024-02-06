@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy the Cargo.toml and Cargo.lock files to the container
 COPY Cargo.toml ./
-COPY Cargo.lock ./
+# COPY Cargo.lock ./
 
 # Copy the rest of your source code
 COPY .. .
@@ -18,13 +18,13 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 
 # Set the working directory inside the container
-# WORKDIR /lqrl-back
+WORKDIR /lqrl-back
 
 # Copy the built binary from the builder stage to the final image
-COPY --from=builder /app/target/release/lqrl-back .
+COPY --from=builder /app/target/release/web-server .
 
-# Expose the port your Actix-web application will listen on
+# Expose the port your Axum-web application will listen on
 EXPOSE 8888
 
 # # Define the command to run your application
-# CMD ["./lqrl-back"]
+CMD ["./lqrl-back"]
