@@ -25,6 +25,3 @@ COPY --from=builder /app/target/release/web-server .
 
 # Expose the port your Axum-web application will listen on
 EXPOSE 8888
-
-# # Define the command to run your application
-CMD ["./lqrl-back"]

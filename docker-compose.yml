@@ -1,6 +1,7 @@
 version: "3.4"
 services:
   web_server:
+    command: sh -c "cargo run"
     build:
       context: .
       cache_from:
