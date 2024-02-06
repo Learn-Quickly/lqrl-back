@@ -1,0 +1,25 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    steps:
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@v3
+      - name: Stop and remove previous container
+        working-directory: ./lqrl-back
+        run: |
+          docker compose down || true
+          docker rmi lqrl-back:latest || true
+      - name: Run server
+        working-directory: ./lqrl-back
+        run: |
+          docker compose up -d
