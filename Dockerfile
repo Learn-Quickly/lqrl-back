@@ -9,7 +9,7 @@ COPY Cargo.toml ./
 # COPY Cargo.lock ./
 
 # Copy the rest of your source code
-COPY .. .
+COPY . .
 
 # Build your Rust application
 RUN cargo build --release
@@ -22,6 +22,9 @@ WORKDIR /lqrl-back
 
 # Copy the built binary from the builder stage to the final image
 COPY --from=builder /app/target/release/web-server .
+COPY --from=builder /app/sql .
 
 # Expose the port your Axum-web application will listen on
-EXPOSE 8888
+EXPOSE 8080
+
+CMD ["./web-server"]

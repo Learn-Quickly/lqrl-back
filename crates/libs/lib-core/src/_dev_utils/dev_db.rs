@@ -11,12 +11,12 @@ use tracing::info;
 type Db = Pool<Postgres>;
 
 // NOTE: Hardcode to prevent deployed system db update.
-const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:postgres@localhost/postgres";
-const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@localhost/app_db";
+const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:postgres@db:5432/postgres";
+const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@db:5432/app_db";
 
 // sql files
 const SQL_RECREATE_DB_FILE_NAME: &str = "00-recreate-db.sql";
-const SQL_DIR: &str = "sql/dev_initial";
+const SQL_DIR: &str = "/app/sql/dev_initial";
 
 const DEMO_PWD: &str = "welcome";
 
@@ -40,6 +40,7 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 	{
 		let sql_recreate_db_file = sql_dir.join(SQL_RECREATE_DB_FILE_NAME);
 		let root_db = new_db_pool(PG_DEV_POSTGRES_URL).await?;
+
 		pexec(&root_db, &sql_recreate_db_file).await?;
 	}
 
@@ -99,7 +100,7 @@ async fn pexec(db: &Db, file: &Path) -> Result<(), sqlx::Error> {
 async fn new_db_pool(db_con_url: &str) -> Result<Db, sqlx::Error> {
 	PgPoolOptions::new()
 		.max_connections(1)
-		.acquire_timeout(Duration::from_millis(500))
+		// .acquire_timeout(Duration::from_millis(500))
 		.connect(db_con_url)
 		.await
 }

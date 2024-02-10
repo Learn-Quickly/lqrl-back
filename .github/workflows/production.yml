@@ -17,7 +17,7 @@ jobs:
       - name: Stop and remove previous container
         run: |
           docker compose down || true
-          docker rmi lqrl-back:latest || true
+          docker rmi lqrl-back-web_server:latest || true
       - name: Run server
         run: |
           docker compose up -d
