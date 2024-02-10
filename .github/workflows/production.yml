@@ -17,7 +17,7 @@ jobs:
       - name: Copy secrets
         run: | 
           echo ${{secrets.ENVIRONMENT}} | base64 -d > .env
-          echo ${{secrets.ENVIRONMENT_DB}} | base64 -d > .env_db
+      #     echo ${{secrets.ENVIRONMENT_DB}} | base64 -d > .env_db
       - name: Stop and remove previous container
         run: |
           docker compose down || true
