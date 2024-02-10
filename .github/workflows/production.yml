@@ -14,7 +14,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: actions/checkout@v3
+      - name: Copy secrets
+        
       - name: Stop and remove previous container
+        run: | 
+          echo ${{secrets.ENVIRONMENT}} | base64 -d > .env
+          echo ${{secrets.ENVIRONMENT_DB}} | base64 -d > .env_db
         run: |
           docker compose down || true
           docker rmi lqrl-back-web_server:latest || true
