@@ -19,10 +19,8 @@ services:
       - .env
   db:
     image: postgres:16.0-alpine
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
+    env_file:
+      - .env_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:

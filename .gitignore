@@ -3,6 +3,7 @@
 !.gitignore
 !.env
 !.dockerignore
+!.env_db
 
 # -- Rust
 # For .cargo/config.toml
