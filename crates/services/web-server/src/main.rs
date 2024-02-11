@@ -7,6 +7,7 @@ mod web;
 
 pub use self::error::{Error, Result};
 use config::web_config;
+use tower_http::services::ServeDir;
 
 use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::web::mw_req_stamp::mw_req_stamp_resolver;
@@ -47,6 +48,7 @@ async fn main() -> Result<()> {
 		.layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
 		.layer(CookieManagerLayer::new())
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
+		.nest_service("/", ServeDir::new("public"))
 		.fallback_service(routes_static::serve_dir());
 
 	// region:    --- Start Server

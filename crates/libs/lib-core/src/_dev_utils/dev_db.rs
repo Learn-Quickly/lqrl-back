@@ -5,18 +5,18 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 use tracing::info;
 
 type Db = Pool<Postgres>;
 
 // NOTE: Hardcode to prevent deployed system db update.
-const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:postgres@db:5432/postgres";
-const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@db:5432/app_db";
+const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:postgres@localhost/postgres"; // db:5432
+const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@localhost/app_db";
 
 // sql files
 const SQL_RECREATE_DB_FILE_NAME: &str = "00-recreate-db.sql";
-const SQL_DIR: &str = "/app/sql/dev_initial";
+// const SQL_DIR: &str = "/app/sql/dev_initial";
+const SQL_DIR: &str = "sql/dev_initial";
 
 const DEMO_PWD: &str = "welcome";
 

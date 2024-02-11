@@ -1,7 +1,6 @@
 use crate::web::Result;
-use axum::{routing::post, Router, extract::Multipart};
+use axum::{extract::Multipart, routing::post, Router};
 use lib_core::model::ModelManager;
-use tracing::field;
 
 use super::mw_auth::CtxW;
 
