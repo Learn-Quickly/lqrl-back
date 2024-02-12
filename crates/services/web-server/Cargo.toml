@@ -27,8 +27,7 @@ time = "0.3"
 uuid = {version = "1", features = ["v4","fast-rng",]}
 strum_macros = "0.26"
 derive_more = { workspace = true }
-image = "0.24.8"
-fast_image_resize = "3.0.1"
+chrono = "0.4.34"
 
 [dev-dependencies]
 httpc-test = "0.1"

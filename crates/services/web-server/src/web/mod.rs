@@ -8,6 +8,7 @@ pub mod routes_register;
 pub mod routes_login;
 pub mod routes_course;
 pub mod routes_static;
+pub mod file_upload;
 
 pub use self::error::ClientError;
 pub use self::error::{Error, Result};
