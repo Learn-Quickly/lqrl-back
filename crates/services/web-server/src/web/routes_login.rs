@@ -10,6 +10,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::Cookies;
 use tracing::debug;
+use utoipa::ToSchema;
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
@@ -19,6 +20,23 @@ pub fn routes(mm: ModelManager) -> Router {
 }
 
 // region:    --- Login
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct LoginPayload {
+	#[schema(example = "username_test")]
+	username: String,
+	#[schema(example = "test_pwd")]
+	pwd: String,
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/login",
+	request_body = LoginPayload,
+	responses(
+		(status = 200, description = "Login successful"),
+		(status = 403, description = "Login failed")
+	)
+)]
 async fn api_login_handler(
 	State(mm): State<ModelManager>,
 	cookies: Cookies,
@@ -71,38 +89,33 @@ async fn api_login_handler(
 
 	Ok(body)
 }
-
-#[derive(Debug, Deserialize)]
-struct LoginPayload {
-	username: String,
-	pwd: String,
-}
 // endregion: --- Login
 
 // region:    --- Logoff
+#[utoipa::path(
+	post,
+	path = "/api/logoff",
+	responses(
+		(status = 200, description = "Logout successful"),
+	),
+	security(
+		("auth_token" = [])
+	)
+)]
 async fn api_logoff_handler(
 	cookies: Cookies,
-	Json(payload): Json<LogoffPayload>,
 ) -> Result<Json<Value>> {
 	debug!("{:<12} - api_logoff_handler", "HANDLER");
-	let should_logoff = payload.logoff;
 
-	if should_logoff {
-		remove_token_cookie(&cookies)?;
-	}
+	remove_token_cookie(&cookies)?;
 
 	// Create the success body.
 	let body = Json(json!({
 		"result": {
-			"logged_off": should_logoff
+			"logged_off": "successful",
 		}
 	}));
 
 	Ok(body)
-}
-
-#[derive(Debug, Deserialize)]
-struct LogoffPayload {
-	logoff: bool,
 }
 // endregion: --- Logoff

@@ -22,6 +22,9 @@ tower-cookies = "0.10"
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# -- OpenApi
+utoipa = { version = "4.2.0", features = ["axum_extras", "chrono"] }
+utoipa-swagger-ui = { version = "6.0.0", features = ["axum"]}
 # -- Others
 time = "0.3"
 uuid = {version = "1", features = ["v4","fast-rng",]}

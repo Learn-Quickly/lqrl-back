@@ -3,6 +3,7 @@ use axum::{extract::State, routing::post, Json, Router};
 use lib_core::{ctx::Ctx, model::{user::{UserBmc, UserForCreate}, ModelManager}};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use utoipa::ToSchema;
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
@@ -10,12 +11,22 @@ pub fn routes(mm: ModelManager) -> Router {
 		.with_state(mm)
 }
 
-#[derive(Debug, Deserialize)]
-struct RegisterPayload {
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RegisterPayload {
+	#[schema(example = "username_test")]
 	username: String,
+	#[schema(example = "test_pwd")]
 	pwd: String,
 }
 
+#[utoipa::path(
+	post,
+	path = "/api/register",
+	request_body = RegisterPayload,
+	responses(
+		(status = 200, description = "Register successful"),
+	)
+)]
 async fn api_register_handler(
 	State(mm): State<ModelManager>,
 	Json(payload): Json<RegisterPayload>,

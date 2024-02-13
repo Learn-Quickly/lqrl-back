@@ -30,7 +30,7 @@ CREATE TABLE course (
   price float4 NOT NULL,
   color varchar(256) NOT NULL,
   published_date timestamp with time zone,
-  image_url varchar(256) NOT NULL,
+  image_url varchar(256),
   state course_state NOT NULL default 'Draft'
 );
 
