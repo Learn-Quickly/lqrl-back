@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
-use axum::{extract::{multipart, Multipart, Path}, routing::post, Json, Router};
+use axum::{extract::{Multipart, Path}, routing::post, Json, Router};
 use lib_core::model::ModelManager;
-use serde::Deserialize;
 use serde_json::{json, Value};
-use utoipa::{IntoParams, ToSchema};
+use tracing::info;
 
 use crate::web::Result;
 
@@ -16,31 +13,24 @@ pub fn routes(mm: ModelManager) -> Router {
 		.with_state(mm)
 }
 
-#[derive(ToSchema)]
-struct ImgFile {
-	img: Vec<u8>
-}
-
-#[derive(Deserialize, IntoParams)]
-struct CourseId {
-	course_id: i64
-}
-
 #[utoipa::path(
 	post,
-	path = "/api/set_course_img",
-	params(CourseId),
+	path = "/api/set_course_img/{course_id}",
+	params(
+		("course_id", description = "ID of the course for which we set an avatar")
+	),
 	request_body(content_type = "multipart/formdata", content = Vec<u8>),
 	responses(
 		(status = 200, description = "Course draft created successfully"),
+	),
+	security(
+		("auth_token" = [])
 	)
 )]
 async fn api_set_course_img_handler(
-	Path(course_id): Path<CourseId>,
+	Path(course_id): Path<i64>,
 	mut multipart: Multipart,
 ) -> Result<Json<Value>> {
-	let course_id = course_id.course_id;
-
     while let Some(field) = multipart.next_field().await.unwrap() {
         let field_name = field.name().unwrap().to_string();
 		
