@@ -100,7 +100,7 @@ async fn api_login_handler(
 		("bearerAuth" = [])
 	)
 )]
-pub async fn api_refresh_access_token_handler(
+async fn api_refresh_access_token_handler(
 	State(mm): State<ModelManager>,
 	AuthBearer(refresh_token): AuthBearer
 ) -> Result<Json<Value>> {

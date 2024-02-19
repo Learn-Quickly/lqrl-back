@@ -1,16 +1,37 @@
-use axum::{extract::{Multipart, Path}, routing::post, Json, Router};
+use axum::{extract::{Multipart, Path, State}, routing::post, Json, Router};
 use lib_core::model::ModelManager;
+use serde::Deserialize;
 use serde_json::{json, Value};
+use utoipa::ToSchema;
 
 use crate::web::Result;
 
-use super::file_upload::upload_file;
+use super::{file_upload::upload_file, mw_auth::CtxW};
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
 		.with_state(mm)
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+struct CoursePayload {
+	title: String,
+	description: String,
+	course_type: String,
+	price: f64,
+	color: String,
+}
+
+// async fn api_create_course_draft(
+// 	ctx: CtxW,
+// 	State(mm): State<ModelManager>,
+// 	Json()
+// ) -> Result<Json<Value>> {
+// 	let ctx = ctx.0;
+
+	
+// }
 
 #[utoipa::path(
 	post,
