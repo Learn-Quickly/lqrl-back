@@ -8,7 +8,7 @@ mod web;
 pub use self::error::{Error, Result};
 use config::web_config;
 use tower_http::services::ServeDir;
-use utoipa::openapi::security::{ApiKey, ApiKeyValue};
+use utoipa::openapi::security::Http;
 
 use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::web::mw_req_stamp::mw_req_stamp_resolver;
@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
     #[openapi(
         paths(
 			routes_login::api_login_handler,
+			routes_login::api_refresh_access_token_handler,
 			routes_register::api_register_handler,
 			routes_course::api_set_course_img_handler,
         ),
@@ -56,9 +57,13 @@ async fn main() -> Result<()> {
         fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
             if let Some(components) = openapi.components.as_mut() {
                 components.add_security_scheme(
-                    "auth_token",
-                    SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("auth-token"))),
-                )
+                    "bearerAuth",
+                    SecurityScheme::Http(Http::new(utoipa::openapi::security::HttpAuthScheme::Bearer)),
+                );
+				components.add_security_scheme(
+					"basicAuth",
+					SecurityScheme::Http(Http::new(utoipa::openapi::security::HttpAuthScheme::Basic))
+				)
             }
         }
     }

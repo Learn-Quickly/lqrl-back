@@ -27,6 +27,9 @@ pub fn routes(mm: ModelManager) -> Router {
 	responses(
 		(status = 200, description = "Login successful"),
 		(status = 403, description = "Login failed")
+	),
+	security(
+		("basicAuth" = [])
 	)
 )]
 async fn api_login_handler(
@@ -86,6 +89,17 @@ async fn api_login_handler(
 // endregion: --- Login
 
 // region:    --- Refresh token
+#[utoipa::path(
+	post,
+	path = "/api/refresh_token",
+	responses(
+		(status = 200, description = "Token refreshed successfully"),
+		(status = 403, description = "Token refresh failed")
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
 pub async fn api_refresh_access_token_handler(
 	State(mm): State<ModelManager>,
 	AuthBearer(refresh_token): AuthBearer

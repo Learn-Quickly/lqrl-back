@@ -23,7 +23,7 @@ pub fn routes(mm: ModelManager) -> Router {
 		(status = 200, description = "Course draft created successfully"),
 	),
 	security(
-		("auth_token" = [])
+		("bearerAuth" = [])
 	)
 )]
 async fn api_set_course_img_handler(
