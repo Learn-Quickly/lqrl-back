@@ -19,6 +19,7 @@ serde_with = { workspace = true }
 axum = { version = "0.7", features = ["macros", "multipart"] }
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 tower-cookies = "0.10"
+axum-auth = "0.7.0"
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

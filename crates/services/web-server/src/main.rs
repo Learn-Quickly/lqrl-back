@@ -18,7 +18,6 @@ use axum::{middleware, Router};
 use lib_core::_dev_utils;
 use lib_core::model::ModelManager;
 use tokio::net::TcpListener;
-use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use utoipa::{
@@ -31,17 +30,16 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+	// region:    --- OpenApi
 	#[derive(OpenApi)]
     #[openapi(
         paths(
 			routes_login::api_login_handler,
-			routes_login::api_logoff_handler,
 			routes_register::api_register_handler,
 			routes_course::api_set_course_img_handler,
         ),
         components(
 			schemas(
-				routes_login::LoginPayload,
 				routes_register::RegisterPayload,
 			)
         ),
@@ -64,6 +62,8 @@ async fn main() -> Result<()> {
             }
         }
     }
+
+	// endregion: --- OpenApi
 	
 	tracing_subscriber::fmt()
 		.without_time() // For early local development.
@@ -81,12 +81,11 @@ async fn main() -> Result<()> {
 		.route_layer(middleware::from_fn(mw_ctx_require));
 
 	let routes_all = Router::new()
-		.merge(routes_login::routes(mm.clone()))
-		.merge(routes_register::routes(mm.clone()))
 		.nest("/api", routes_course)
 		.layer(middleware::map_response(mw_reponse_map))
 		.layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
-		.layer(CookieManagerLayer::new())
+		.merge(routes_login::routes(mm.clone()))
+		.merge(routes_register::routes(mm.clone()))
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
 		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))

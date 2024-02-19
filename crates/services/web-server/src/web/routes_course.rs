@@ -1,7 +1,6 @@
 use axum::{extract::{Multipart, Path}, routing::post, Json, Router};
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
-use tracing::info;
 
 use crate::web::Result;
 

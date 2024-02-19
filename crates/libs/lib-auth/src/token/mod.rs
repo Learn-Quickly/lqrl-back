@@ -26,6 +26,11 @@ pub struct Token {
 	pub sign_b64u: String, // Signature, base64url encoded.
 }
 
+pub enum TokenType {
+	Refresh,
+	Access,
+}
+
 impl FromStr for Token {
 	type Err = Error;
 
@@ -64,9 +69,14 @@ impl Display for Token {
 
 // region:    --- Web Token Gen and Validation
 
-pub fn generate_web_token(user: &str, salt: Uuid) -> Result<Token> {
+pub fn generate_web_token(user: &str, salt: Uuid, token_type: TokenType) -> Result<Token> {
 	let config = &auth_config();
-	_generate_token(user, config.TOKEN_DURATION_SEC, salt, &config.TOKEN_KEY)
+	let duration = match token_type {
+    	TokenType::Refresh => config.REFRESH_TOKEN_DURATION_SEC,
+    	TokenType::Access => config.ACCESS_TOKEN_DURATION_SEC,
+	};
+
+	_generate_token(user, duration, salt, &config.TOKEN_KEY)
 }
 
 pub fn validate_web_token(origin_token: &Token, salt: Uuid) -> Result<()> {

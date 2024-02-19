@@ -17,7 +17,9 @@ pub struct AuthConfig {
 	pub PWD_KEY: Vec<u8>,
 
 	pub TOKEN_KEY: Vec<u8>,
-	pub TOKEN_DURATION_SEC: f64,
+
+	pub REFRESH_TOKEN_DURATION_SEC: f64,
+	pub ACCESS_TOKEN_DURATION_SEC: f64,
 }
 
 impl AuthConfig {
@@ -27,7 +29,9 @@ impl AuthConfig {
 			PWD_KEY: get_env_b64u_as_u8s("SERVICE_PWD_KEY")?,
 
 			TOKEN_KEY: get_env_b64u_as_u8s("SERVICE_TOKEN_KEY")?,
-			TOKEN_DURATION_SEC: get_env_parse("SERVICE_TOKEN_DURATION_SEC")?,
+
+			REFRESH_TOKEN_DURATION_SEC: get_env_parse("SERVICE_REFRESH_TOKEN_DURATION_SEC")?,
+			ACCESS_TOKEN_DURATION_SEC: get_env_parse("SERVICE_ACCESS_TOKEN_DURATION_SEC")?,
 		})
 	}
 }

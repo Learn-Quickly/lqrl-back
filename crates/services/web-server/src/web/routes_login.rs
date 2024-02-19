@@ -1,37 +1,29 @@
-use crate::web::{self, remove_token_cookie, Error, Result};
+use crate::web::{Error, Result};
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
+use axum_auth::{AuthBasic, AuthBearer};
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
+use lib_auth::token::{generate_web_token, validate_web_token, Token};
 use lib_core::ctx::Ctx;
-use lib_core::model::user::{UserBmc, UserForLogin};
+use lib_core::model::user::{UserBmc, UserForAuth, UserForLogin};
 use lib_core::model::ModelManager;
-use serde::Deserialize;
 use serde_json::{json, Value};
-use tower_cookies::Cookies;
 use tracing::debug;
-use utoipa::ToSchema;
+
+use super::mw_auth::CtxExtError;
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/api/login", post(api_login_handler))
-		.route("/api/logoff", post(api_logoff_handler))
+		.route("/api/refresh_token", post(api_refresh_access_token_handler))
 		.with_state(mm)
 }
 
 // region:    --- Login
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LoginPayload {
-	#[schema(example = "username_test")]
-	username: String,
-	#[schema(example = "test_pwd")]
-	pwd: String,
-}
-
 #[utoipa::path(
 	post,
 	path = "/api/login",
-	request_body = LoginPayload,
 	responses(
 		(status = 200, description = "Login successful"),
 		(status = 403, description = "Login failed")
@@ -39,22 +31,23 @@ pub struct LoginPayload {
 )]
 async fn api_login_handler(
 	State(mm): State<ModelManager>,
-	cookies: Cookies,
-	Json(payload): Json<LoginPayload>,
+	AuthBasic((username, pwd_clear)): AuthBasic,
 ) -> Result<Json<Value>> {
 	debug!("{:<12} - api_login_handler", "HANDLER");
 
-	let LoginPayload {
-		username,
-		pwd: pwd_clear,
-	} = payload;
 	let root_ctx = Ctx::root_ctx();
 
 	// -- Get the user.
 	let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &mm, &username)
 		.await?
 		.ok_or(Error::LoginFailUsernameNotFound)?;
+
 	let user_id = user.id;
+
+	let pwd_clear = match pwd_clear {
+    	Some(pwd) => pwd,
+    	None => return Err(Error::LoginFailUserHasNoPwd { user_id }),
+	};
 
 	// -- Validate the password.
 	let Some(pwd) = user.pwd else {
@@ -77,13 +70,14 @@ async fn api_login_handler(
 		UserBmc::update_pwd(&root_ctx, &mm, user.id, &pwd_clear).await?;
 	}
 
-	// -- Set web token.
-	web::set_token_cookie(&cookies, &user.username, user.token_salt)?;
+	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
+	let refresh_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Refresh)?;
 
 	// Create the success body.
 	let body = Json(json!({
 		"result": {
-			"success": true
+			"access_token": access_token.to_string(),
+			"refresh_token": refresh_token.to_string()
 		}
 	}));
 
@@ -91,31 +85,34 @@ async fn api_login_handler(
 }
 // endregion: --- Login
 
-// region:    --- Logoff
-#[utoipa::path(
-	post,
-	path = "/api/logoff",
-	responses(
-		(status = 200, description = "Logout successful"),
-	),
-	security(
-		("auth_token" = [])
-	)
-)]
-async fn api_logoff_handler(
-	cookies: Cookies,
+// region:    --- Refresh token
+pub async fn api_refresh_access_token_handler(
+	State(mm): State<ModelManager>,
+	AuthBearer(refresh_token): AuthBearer
 ) -> Result<Json<Value>> {
-	debug!("{:<12} - api_logoff_handler", "HANDLER");
+	let refresh_token: Token = refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
-	remove_token_cookie(&cookies)?;
+	// -- Get UserForAuth
+	let user: UserForAuth =
+		UserBmc::first_by_username(&Ctx::root_ctx(), &mm, &refresh_token.ident)
+			.await
+			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
+			.ok_or(CtxExtError::UserNotFound)?;
 
-	// Create the success body.
+	// -- Validate Token
+	validate_web_token(&refresh_token, user.token_salt)
+		.map_err(|_| CtxExtError::FailValidate)?;
+
+	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
+	let refresh_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Refresh)?;
+
 	let body = Json(json!({
 		"result": {
-			"logged_off": "successful",
+			"access_token": access_token.to_string(),
+			"refresh_token": refresh_token.to_string()
 		}
 	}));
 
 	Ok(body)
 }
-// endregion: --- Logoff
+// endregion  --- Refresh token
