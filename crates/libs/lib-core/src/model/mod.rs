@@ -25,6 +25,7 @@ mod store;
 
 pub mod modql_utils;
 pub mod user;
+pub mod course;
 
 pub use self::error::{Error, Result};
 

@@ -17,18 +17,21 @@ serde_json = "1"
 serde_with = { workspace = true }
 # -- Web
 axum = { version = "0.7", features = ["macros", "multipart"] }
-tower-http = { version = "0.5", features = ["fs"] }
+tower-http = { version = "0.5", features = ["cors", "fs"] }
 tower-cookies = "0.10"
+axum-auth = "0.7.0"
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# -- OpenApi
+utoipa = { version = "4.2.0", features = ["axum_extras", "chrono"] }
+utoipa-swagger-ui = { version = "6.0.0", features = ["axum"]}
 # -- Others
 time = "0.3"
 uuid = {version = "1", features = ["v4","fast-rng",]}
 strum_macros = "0.26"
 derive_more = { workspace = true }
-image = "0.24.8"
-fast_image_resize = "3.0.1"
+chrono = "0.4.34"
 
 [dev-dependencies]
 httpc-test = "0.1"
