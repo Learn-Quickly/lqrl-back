@@ -2,14 +2,16 @@ use crate::web::{Error, Result};
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
-use axum_auth::{AuthBasic, AuthBearer};
+use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
 use lib_core::ctx::Ctx;
 use lib_core::model::user::{UserBmc, UserForAuth, UserForLogin};
 use lib_core::model::ModelManager;
+use serde::Deserialize;
 use serde_json::{json, Value};
 use tracing::debug;
+use utoipa::ToSchema;
 
 use super::mw_auth::CtxExtError;
 
@@ -89,22 +91,27 @@ async fn api_login_handler(
 // endregion: --- Login
 
 // region:    --- Refresh token
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RefreshTokenPayload {
+	#[schema(example = "dGVzdHVzZXI.MjAyNC0wOC0xN1QwNDo0ODowOS4xNjQ2MjU0NTha.MjcedibXB_UadS2vIG2lPfwlukqw5Ir-DIO_zwwmn9dQqd0oeozAi3Aa99f4UlC8ETrJjRiZNMHjyIsyEaqgDA")]
+	refresh_token: String,
+}
+
 #[utoipa::path(
 	post,
 	path = "/api/refresh_token",
+	request_body = RefreshTokenPayload,
 	responses(
 		(status = 200, description = "Token refreshed successfully"),
 		(status = 403, description = "Token refresh failed")
-	),
-	security(
-		("bearerAuth" = [])
 	)
 )]
 async fn api_refresh_access_token_handler(
 	State(mm): State<ModelManager>,
-	AuthBearer(refresh_token): AuthBearer
+	Json(payload): Json<RefreshTokenPayload>
 ) -> Result<Json<Value>> {
-	let refresh_token: Token = refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
+	let refresh_token: Token = payload.refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
 	// -- Get UserForAuth
 	let user: UserForAuth =

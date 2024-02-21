@@ -42,6 +42,7 @@ async fn main() -> Result<()> {
         components(
 			schemas(
 				routes_register::RegisterPayload,
+				routes_login::RefreshTokenPayload,
 			)
         ),
         modifiers(&SecurityAddon),
