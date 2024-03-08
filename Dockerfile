@@ -11,6 +11,8 @@ COPY Cargo.toml ./
 # Copy the rest of your source code
 COPY . .
 
+RUN sudo apt-get install lld clang
+
 # Build your Rust application
 RUN cargo build --release
 
