@@ -1,11 +1,10 @@
 use axum::{extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseState}, ModelManager};
+use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
-use lib_utils::time::Rfc3339;
 
 use crate::web::Result;
 
@@ -15,6 +14,10 @@ pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
 		.route("/create_course_draft", post(api_create_course_draft))
+		.route("/publish_course", post(api_publish_course))
+		.route("/archive_course", post(api_archive_course))
+		.route("/register_for_course", post(api_register_for_course))
+		.route("/unsubscribe_from_course", post(api_unsubscribe_from_course))
 		.route("/get_course/:i64", get(api_get_course))
 		.route("/get_courses/", post(api_get_courses))
 		.with_state(mm)
@@ -69,6 +72,69 @@ async fn api_create_course_draft(
 
 	let body = Json(created_course_draft);
 	
+	Ok(body)
+}
+
+#[derive(ToSchema, Deserialize)]
+pub struct CourseId {
+	course_id: i64,
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/api_publish_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_publish_course(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(course_id): Json<CourseId>,
+) -> Result<Json<Value>> {
+	let ctx = ctx.0;
+
+	CourseBmc::publish_course(&ctx, &mm, course_id.course_id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/api_archive_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_archive_course(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(course_id): Json<CourseId>,
+) -> Result<Json<Value>> {
+	let ctx = ctx.0;
+
+	CourseBmc::archive_course(&ctx, &mm, course_id.course_id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
 	Ok(body)
 }
 
@@ -225,4 +291,73 @@ async fn api_set_course_img_handler(
 	}));
 
     Ok(body)
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/register_for_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_register_for_course(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(course_id): Json<CourseId>
+) -> Result<Json<Value>> {
+	let ctx = ctx.0;
+
+	let users_courses_c = UsersCoursesForCreate {
+    	user_id: ctx.user_id(),
+    	course_id: course_id.course_id,
+    	user_role: lib_core::model::users_courses::UserCourseRole::Student,
+	};
+
+	UsersCoursesBmc::create(&mm, users_courses_c).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/unsubscribe_from_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_unsubscribe_from_course(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(course_id): Json<CourseId>
+) -> Result<Json<Value>> {
+	let ctx = ctx.0;
+
+	let users_courses_d = UsersCoursesForDelete {
+    	user_id: ctx.user_id(),
+    	course_id: course_id.course_id,
+	};
+
+	UsersCoursesBmc::delete(&mm, users_courses_d).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
 }

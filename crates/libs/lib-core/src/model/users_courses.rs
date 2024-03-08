@@ -1,9 +1,9 @@
 use derive_more::Display;
 use modql::field::{Fields, HasFields};
-use sea_query::{Iden, PostgresQueryBuilder, Query};
+use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
-use crate::model::Result;
+use crate::model::{Result, Error};
 
 use super::{base::DbBmc, ModelManager};
 
@@ -28,10 +28,15 @@ impl From<UserCourseRole> for sea_query::Value {
 
 #[derive(Fields)]
 pub struct UsersCoursesForCreate {
-    pub(crate) user_id: i64,
-    pub(crate) course_id: i64,
+    pub user_id: i64,
+    pub course_id: i64,
 	#[field(cast_as = "user_course_roles")]
-    pub(crate) user_role: UserCourseRole,
+    pub user_role: UserCourseRole,
+}
+
+pub struct UsersCoursesForDelete {
+    pub user_id: i64,
+    pub course_id: i64,
 }
 
 pub struct UsersCoursesBmc;
@@ -66,4 +71,32 @@ impl UsersCoursesBmc {
 
 	    Ok(())
     }
+
+	pub async fn delete(
+		mm: &ModelManager,
+		users_courses_d: UsersCoursesForDelete,
+	) -> Result<()> {
+		// -- Build query
+		let mut query = Query::delete();
+		query
+			.from_table(Self::table_ref())
+			.and_where(Expr::col(UserCourseIden::UserId).eq(users_courses_d.user_id))
+			.and_where(Expr::col(UserCourseIden::CourseId).eq(users_courses_d.course_id));
+
+		// -- Execute query
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_with(&sql, values);
+		let count = mm.dbx().execute(sqlx_query).await?;
+
+		// -- Check result
+		if count == 0 {
+			Err(Error::UserCourseNotFound {
+				entity: Self::TABLE,
+				user_id: users_courses_d.user_id,
+				course_id: users_courses_d.course_id,
+			}) 
+		} else {
+			Ok(())
+		}
+	}
 }

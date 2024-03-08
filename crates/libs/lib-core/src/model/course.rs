@@ -54,6 +54,16 @@ pub struct CourseForCreate {
 	pub color: String,
 }
 
+#[derive(Fields)]
+pub struct CourseForPublish {
+	state: CourseState,
+}
+
+#[derive(Fields)]
+pub struct CourseForArchive{
+	state: CourseState,
+}
+
 /// Marker trait
 pub trait CourseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
@@ -125,6 +135,42 @@ impl CourseBmc {
 		Ok(course_id)
 	}
 
+	pub async fn publish_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		course_id: i64,
+	) -> Result<()> {
+		let course_for_publish = CourseForPublish {
+    		state: CourseState::Published,
+		};
+
+		mm.dbx.begin_txn().await?;
+
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
+
+		mm.dbx().commit_txn().await?;
+
+		Ok(())
+	}
+
+	pub async fn archive_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		course_id: i64,
+	) -> Result<()> {
+		let course_for_publish = CourseForArchive {
+    		state: CourseState::Archived,
+		};
+
+		mm.dbx.begin_txn().await?;
+
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
+
+		mm.dbx().commit_txn().await?;
+
+		Ok(())
+	}
+	
 	pub async fn list(
 		ctx: &Ctx,
 		mm: &ModelManager,

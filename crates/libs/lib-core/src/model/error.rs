@@ -15,6 +15,11 @@ pub enum Error {
 		entity: &'static str,
 		id: i64,
 	},
+	UserCourseNotFound {
+		entity: &'static str,
+		user_id: i64,
+		course_id: i64,
+	},
 	ListLimitOverMax {
 		max: i64,
 		actual: i64,
