@@ -3,6 +3,7 @@ FROM rust:latest as builder
 
 # Set the working directory inside the container
 WORKDIR /app
+RUN apt update && apt install lld clang -y
 
 # Copy the Cargo.toml and Cargo.lock files to the container
 COPY Cargo.toml ./
@@ -10,8 +11,6 @@ COPY Cargo.toml ./
 
 # Copy the rest of your source code
 COPY . .
-
-RUN sudo apt-get install lld clang
 
 # Build your Rust application
 RUN cargo build --release
