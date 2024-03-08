@@ -57,6 +57,7 @@ pub struct CourseForCreate {
 #[derive(Fields)]
 pub struct CourseForPublish {
 	state: CourseState,
+	published_date: OffsetDateTime,
 }
 
 #[derive(Fields)]
@@ -140,10 +141,12 @@ impl CourseBmc {
 		mm: &ModelManager,
 		course_id: i64,
 	) -> Result<()> {
+		let now_utc = lib_utils::time::now_utc();
 		let course_for_publish = CourseForPublish {
     		state: CourseState::Published,
+			published_date: now_utc,
 		};
-		
+
 		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
 
 		Ok(())
