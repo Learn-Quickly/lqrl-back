@@ -40,6 +40,7 @@ async fn main() -> Result<()> {
 			routes_course::api_set_course_img_handler,
 			routes_course::api_create_course_draft,
 			routes_course::api_get_course,
+			routes_course::api_get_courses,
         ),
         components(
 			schemas(
@@ -48,6 +49,7 @@ async fn main() -> Result<()> {
 				routes_course::CourseCreateDraftPayload,
 				routes_course::CreatedCourseDraft,
 				routes_course::CoursePayload,
+				routes_course::CourseFilterPayload,
 			)
         ),
         modifiers(&SecurityAddon),

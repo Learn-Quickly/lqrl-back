@@ -12,7 +12,6 @@ use lib_utils::time::Rfc3339;
 
 use crate::ctx::Ctx;
 
-use super::user::User;
 use super::users_courses::{UserCourseRole, UsersCoursesBmc, UsersCoursesForCreate};
 use super::{base::{self, DbBmc}, ModelManager};
 
@@ -131,7 +130,7 @@ impl CourseBmc {
 		mm: &ModelManager,
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
-	) -> Result<Vec<User>> {
+	) -> Result<Vec<Course>> {
 		base::list::<Self, _, _>(ctx, mm, filter, list_options).await
 	}
 

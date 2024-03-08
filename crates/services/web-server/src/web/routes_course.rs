@@ -16,6 +16,7 @@ pub fn routes(mm: ModelManager) -> Router {
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
 		.route("/create_course_draft", post(api_create_course_draft))
 		.route("/get_course/:i64", get(api_get_course))
+		.route("/get_courses/", post(api_get_courses))
 		.with_state(mm)
 }
 
@@ -74,16 +75,15 @@ async fn api_create_course_draft(
 #[serde_as]
 #[derive(Serialize, ToSchema)]
 pub struct CoursePayload {
-	pub id: i64,
-	pub title: String,
-	pub description: String,
-	pub course_type: String,
-	pub price: f64,
-	pub color: String,
-	#[serde_as(as = "Option<Rfc3339>")]
-	pub published_date: Option<OffsetDateTime>,
-	pub img_url: Option<String>,
-	pub state: CourseState,
+	id: i64,
+	title: String,
+	description: String,
+	course_type: String,
+	price: f64,
+	color: String,
+	published_date: Option<OffsetDateTime>,
+	img_url: Option<String>,
+	state: CourseState,
 }
 
 impl From<Course> for CoursePayload {
@@ -125,6 +125,58 @@ async fn api_get_course(
 	let course: Course = CourseBmc::get(&ctx, &mm, course_id).await?;
 
 	Ok(Json(course.into()))
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CourseFilterPayload {
+	#[schema(example = r#"{"price": {"$gte": 1000}}""#)]
+	filters: Option<Value>,
+	#[schema(example = r#"{"limit": 2, "offset": 0, "order_bys": "!title"}""#)]
+	list_options: Option<Value>,
+}
+
+#[utoipa::path(
+	post,
+	path = "/api/get_courses/",
+	request_body = CourseFilterPayload,
+	// params(
+	// 	("filter_payload", description = 
+	// 		"It contains two optional fields:\n
+	// 			1) filters - list of filters\n
+	// 			2) list_options - contains offset, limit, order_bys\n
+	// 		Documentation: https://lib.rs/crates/modql"
+	// 	),
+	// ),
+	responses(
+		(status = 200, body = Vec<CoursePayload>),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_get_courses(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(filter_payload): Json<CourseFilterPayload>,
+) -> Result<Json<Vec<CoursePayload>>> {
+	let ctx = ctx.0;
+
+	let filters = if let Some(filters) = filter_payload.filters {
+		serde_json::from_value(filters)?
+	} else {
+		None
+	};
+
+	let list_options = if let Some(list_options) = filter_payload.list_options {
+		serde_json::from_value(list_options)?
+	} else {
+		None
+	};
+
+	let courses: Vec<Course> = CourseBmc::list(&ctx, &mm, filters, list_options).await?;
+	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
+
+	Ok(Json(body))
 }
 
 #[utoipa::path(
