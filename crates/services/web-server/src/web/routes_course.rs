@@ -1,6 +1,6 @@
 use axum::{extract::{Multipart, Path, State}, routing::post, Json, Router};
-use lib_core::model::ModelManager;
-use serde::Deserialize;
+use lib_core::model::{course::{CourseBmc, CourseForCreate}, ModelManager};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use utoipa::ToSchema;
 
@@ -11,11 +11,12 @@ use super::{file_upload::upload_file, mw_auth::CtxW};
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
+		.route("/create_course_draft", post(api_create_course_draft))
 		.with_state(mm)
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-struct CoursePayload {
+pub struct CourseCreateDraftPayload {
 	title: String,
 	description: String,
 	course_type: String,
@@ -23,15 +24,48 @@ struct CoursePayload {
 	color: String,
 }
 
-// async fn api_create_course_draft(
-// 	ctx: CtxW,
-// 	State(mm): State<ModelManager>,
-// 	Json()
-// ) -> Result<Json<Value>> {
-// 	let ctx = ctx.0;
+#[derive(Serialize, ToSchema)]
+pub struct CreatedCourseDraft {
+	course_id: i64,
+}
 
+#[utoipa::path(
+	post,
+	path = "/api/create_course_draft",
+	request_body = CourseCreateDraftPayload,
+	responses(
+		(status = 200, description = "Course draft created successfully", body = CreatedCourseDraft),
+		(status = 500, description = "Course already exists. The title must be unique"),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_create_course_draft(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Json(paylod): Json<CourseCreateDraftPayload>
+) -> Result<Json<String>> {
+	let ctx = ctx.0;
+
+	let course_c = CourseForCreate {
+    	title: paylod.title,
+    	description: paylod.description,
+    	course_type: paylod.course_type,
+    	price: paylod.price,
+    	color: paylod.color,
+	};
+
+	let course_id = CourseBmc::create_draft(&ctx, &mm, course_c).await?;
+
+	let created_course_draft = CreatedCourseDraft {
+    	course_id,
+	};
+
+	let body = Json(serde_json::to_string(&created_course_draft)?);
 	
-// }
+	Ok(body)
+}
 
 #[utoipa::path(
 	post,
@@ -41,7 +75,7 @@ struct CoursePayload {
 	),
 	request_body(content_type = "multipart/formdata", content = Vec<u8>),
 	responses(
-		(status = 200, description = "Course draft created successfully"),
+		(status = 200, description = "Course image successfully set"),
 	),
 	security(
 		("bearerAuth" = [])
@@ -73,10 +107,10 @@ async fn api_set_course_img_handler(
     }
 
 	let body = Json(json!({
-				"result": {
-					"error": "file error"
-				}
-			}));
+		"result": {
+			"error": "file error"
+		}
+	}));
 
     Ok(body)
 }

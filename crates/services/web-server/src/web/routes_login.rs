@@ -94,7 +94,7 @@ async fn api_login_handler(
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct RefreshTokenPayload {
-	#[schema(example = "dGVzdHVzZXI.MjAyNC0wOC0xN1QwNDo0ODowOS4xNjQ2MjU0NTha.MjcedibXB_UadS2vIG2lPfwlukqw5Ir-DIO_zwwmn9dQqd0oeozAi3Aa99f4UlC8ETrJjRiZNMHjyIsyEaqgDA")]
+	#[schema(example = "dGVzdHVzZXI.MjAyNC0wOC0xN1QwNDo0ODowOS4xNjq3XjU0NTha.MjcedibXB_UadS2vIG2lPfwlukqw5Ir-DIO_zwwmn9dQqd0oeozAi3Aa99f4UlC8ETrJjRiZNMHjyIsyEaqgDA")]
 	refresh_token: String,
 }
 

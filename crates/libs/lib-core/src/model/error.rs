@@ -24,6 +24,9 @@ pub enum Error {
 	UserAlreadyExists {
 		username: String,
 	},
+	CourseAlreadyExists {
+		title: String,
+	},
 	UniqueViolation {
 		table: String,
 		constraint: String,
