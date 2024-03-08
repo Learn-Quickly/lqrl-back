@@ -38,11 +38,23 @@ async fn main() -> Result<()> {
 			routes_login::api_refresh_access_token_handler,
 			routes_register::api_register_handler,
 			routes_course::api_set_course_img_handler,
+			routes_course::api_create_course_draft,
+			routes_course::api_publish_course,
+			routes_course::api_archive_course,
+			routes_course::api_register_for_course,
+			routes_course::api_unsubscribe_from_course,
+			routes_course::api_get_course,
+			routes_course::api_get_courses,
         ),
         components(
 			schemas(
 				routes_register::RegisterPayload,
 				routes_login::RefreshTokenPayload,
+				routes_course::CourseCreateDraftPayload,
+				routes_course::CreatedCourseDraft,
+				routes_course::CoursePayload,
+				routes_course::CourseId,
+				routes_course::CourseFilterPayload,
 			)
         ),
         modifiers(&SecurityAddon),

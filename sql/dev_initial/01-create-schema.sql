@@ -27,11 +27,17 @@ CREATE TABLE course (
   title varchar(256) NOT NULL UNIQUE,
   description varchar(256) NOT NULL,
   course_type varchar(256) NOT NULL,
-  price float4 NOT NULL,
+  price float8 NOT NULL,
   color varchar(256) NOT NULL,
   published_date timestamp with time zone,
-  image_url varchar(256),
-  state course_state NOT NULL default 'Draft'
+  img_url varchar(256),
+  state course_state NOT NULL default 'Draft',
+
+  -- Timestamps
+  cid bigint NOT NULL,
+  ctime timestamp with time zone NOT NULL,
+  mid bigint NOT NULL,
+  mtime timestamp with time zone NOT NULL  
 );
 
 -- User in course
