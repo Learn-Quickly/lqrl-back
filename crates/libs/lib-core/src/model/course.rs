@@ -1,9 +1,14 @@
-use modql::field::Fields;
+use derive_more::Display;
+use modql::field::{Fields, HasFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use sqlx::postgres::PgRow;
 use sqlx::FromRow;
+use time::OffsetDateTime;
 use crate::model::modql_utils::time_to_sea_value;
 use crate::model::{Error, Result};
+use lib_utils::time::Rfc3339;
 
 use crate::ctx::Ctx;
 
@@ -11,10 +16,34 @@ use super::user::User;
 use super::users_courses::{UserCourseRole, UsersCoursesBmc, UsersCoursesForCreate};
 use super::{base::{self, DbBmc}, ModelManager};
 
+#[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize)]
 pub struct Course {
 	pub id: i64,
-	pub username: String,
+	pub title: String,
+	pub description: String,
+	pub course_type: String,
+	pub price: f64,
+	pub color: String,
+	#[serde_as(as = "Option<Rfc3339>")]
+	pub published_date: Option<OffsetDateTime>,
+	pub img_url: Option<String>,
+	#[field(cast_as = "user_course_roles")]
+	pub state: CourseState,
+}
+
+#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
+#[sqlx(type_name = "course_state")]
+pub enum CourseState {
+    Draft,
+    Published,
+	Archived,
+}
+
+impl From<CourseState> for sea_query::Value {
+	fn from(value: CourseState) -> Self {
+		value.to_string().into()
+	}
 }
 
 #[derive(Deserialize, Fields)] 
@@ -25,6 +54,11 @@ pub struct CourseForCreate {
 	pub price: f64,
 	pub color: String,
 }
+
+/// Marker trait
+pub trait CourseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
+
+impl CourseBy for Course {}
 
 #[derive(FilterNodes, Deserialize, Default, Debug)]
 pub struct CourseFilter {
@@ -99,5 +133,12 @@ impl CourseBmc {
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<User>> {
 		base::list::<Self, _, _>(ctx, mm, filter, list_options).await
+	}
+
+	pub async fn get<E>(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
+	where
+		E: CourseBy,
+	{
+		base::get::<Self, _>(ctx, mm, id).await
 	}
 }

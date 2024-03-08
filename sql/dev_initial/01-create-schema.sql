@@ -27,10 +27,10 @@ CREATE TABLE course (
   title varchar(256) NOT NULL UNIQUE,
   description varchar(256) NOT NULL,
   course_type varchar(256) NOT NULL,
-  price float4 NOT NULL,
+  price float8 NOT NULL,
   color varchar(256) NOT NULL,
   published_date timestamp with time zone,
-  image_url varchar(256),
+  img_url varchar(256),
   state course_state NOT NULL default 'Draft',
 
   -- Timestamps

@@ -1,8 +1,11 @@
-use axum::{extract::{Multipart, Path, State}, routing::post, Json, Router};
-use lib_core::model::{course::{CourseBmc, CourseForCreate}, ModelManager};
+use axum::{extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
+use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseState}, ModelManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use serde_with::serde_as;
+use time::OffsetDateTime;
 use utoipa::ToSchema;
+use lib_utils::time::Rfc3339;
 
 use crate::web::Result;
 
@@ -12,6 +15,7 @@ pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
 		.route("/create_course_draft", post(api_create_course_draft))
+		.route("/get_course/:i64", get(api_get_course))
 		.with_state(mm)
 }
 
@@ -45,7 +49,7 @@ async fn api_create_course_draft(
 	ctx: CtxW,
 	State(mm): State<ModelManager>,
 	Json(paylod): Json<CourseCreateDraftPayload>
-) -> Result<Json<String>> {
+) -> Result<Json<CreatedCourseDraft>> {
 	let ctx = ctx.0;
 
 	let course_c = CourseForCreate {
@@ -62,9 +66,65 @@ async fn api_create_course_draft(
     	course_id,
 	};
 
-	let body = Json(serde_json::to_string(&created_course_draft)?);
+	let body = Json(created_course_draft);
 	
 	Ok(body)
+}
+
+#[serde_as]
+#[derive(Serialize, ToSchema)]
+pub struct CoursePayload {
+	pub id: i64,
+	pub title: String,
+	pub description: String,
+	pub course_type: String,
+	pub price: f64,
+	pub color: String,
+	#[serde_as(as = "Option<Rfc3339>")]
+	pub published_date: Option<OffsetDateTime>,
+	pub img_url: Option<String>,
+	pub state: CourseState,
+}
+
+impl From<Course> for CoursePayload {
+	fn from(value: Course) -> Self {
+		Self {
+    		id: value.id,
+    		title: value.title,
+    		description: value.description,
+    		course_type: value.course_type,
+    		price: value.price,
+    		color: value.color,
+    		published_date: value.published_date,
+    		img_url: value.img_url,
+    		state: value.state,
+		}
+	}
+}
+
+#[utoipa::path(
+	get,
+	path = "/api/get_course/{course_id}",
+	params(
+		("course_id", description = "ID of the course")
+	),
+	responses(
+		(status = 200, body=CoursePayload),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_get_course(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
+	Path(course_id): Path<i64>,
+) -> Result<Json<CoursePayload>> {
+	let ctx = ctx.0;
+
+	let course: Course = CourseBmc::get(&ctx, &mm, course_id).await?;
+
+	Ok(Json(course.into()))
 }
 
 #[utoipa::path(
@@ -102,7 +162,7 @@ async fn api_set_course_img_handler(
 			return Ok(body);
         } else {
             let data = field.text().await.unwrap();
-            println!("field: {}      value: {}",field_name,data);
+            println!("field: {}, value: {}", field_name, data);
         }
     }
 

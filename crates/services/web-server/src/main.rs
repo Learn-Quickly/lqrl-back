@@ -39,6 +39,7 @@ async fn main() -> Result<()> {
 			routes_register::api_register_handler,
 			routes_course::api_set_course_img_handler,
 			routes_course::api_create_course_draft,
+			routes_course::api_get_course,
         ),
         components(
 			schemas(
@@ -46,6 +47,7 @@ async fn main() -> Result<()> {
 				routes_login::RefreshTokenPayload,
 				routes_course::CourseCreateDraftPayload,
 				routes_course::CreatedCourseDraft,
+				routes_course::CoursePayload,
 			)
         ),
         modifiers(&SecurityAddon),
