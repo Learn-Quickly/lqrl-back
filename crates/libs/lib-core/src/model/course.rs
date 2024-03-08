@@ -31,7 +31,7 @@ pub struct Course {
 	pub state: CourseState,
 }
 
-#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
+#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize, PartialEq, Eq)]
 #[sqlx(type_name = "course_state")]
 pub enum CourseState {
     Draft,
@@ -143,12 +143,8 @@ impl CourseBmc {
 		let course_for_publish = CourseForPublish {
     		state: CourseState::Published,
 		};
-
-		mm.dbx.begin_txn().await?;
-
+		
 		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
-
-		mm.dbx().commit_txn().await?;
 
 		Ok(())
 	}
@@ -162,11 +158,24 @@ impl CourseBmc {
     		state: CourseState::Archived,
 		};
 
-		mm.dbx.begin_txn().await?;
-
 		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
 
-		mm.dbx().commit_txn().await?;
+		Ok(())
+	}
+
+	pub async fn register_for_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		users_courses_c: UsersCoursesForCreate,
+	) -> Result<()> {
+		let course_id = users_courses_c.course_id;
+		let course: Course = Self::get(ctx, mm, course_id).await?;
+
+		if !course.state.eq(&CourseState::Published) {
+			return Err(Error::CourseStateMustBePublished { course_id });
+		}
+
+		UsersCoursesBmc::create(mm, users_courses_c).await?;
 
 		Ok(())
 	}

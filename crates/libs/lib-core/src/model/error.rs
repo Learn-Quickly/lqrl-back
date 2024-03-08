@@ -36,6 +36,9 @@ pub enum Error {
 		table: String,
 		constraint: String,
 	},
+	CourseStateMustBePublished {
+		course_id: i64,
+	},
 
 	// -- ModelManager
 	CantCreateModelManagerProvider(String),

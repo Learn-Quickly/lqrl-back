@@ -317,7 +317,7 @@ async fn api_register_for_course(
     	user_role: lib_core::model::users_courses::UserCourseRole::Student,
 	};
 
-	UsersCoursesBmc::create(&mm, users_courses_c).await?;
+	CourseBmc::register_for_course(&ctx, &mm, users_courses_c).await?;
 
 	let body = Json(json!({
 		"result": {
