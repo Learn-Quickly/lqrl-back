@@ -42,6 +42,10 @@ pub enum Error {
 	// -- External Modules
 	#[from]
 	SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
+
+	// -- File
+	CreateFileFail,
+	RemoveFileFail,
 }
 
 // region:    --- Axum IntoResponse

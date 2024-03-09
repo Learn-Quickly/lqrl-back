@@ -54,6 +54,16 @@ pub struct CourseForCreate {
 	pub color: String,
 }
 
+#[derive(Fields)] 
+pub struct CourseForUpdate {
+	pub title: Option<String>,
+	pub description: Option<String>,
+	pub course_type: Option<String>,
+	pub price: Option<f64>,
+	pub color: Option<String>,
+	pub img_url: Option<String>,
+}
+
 #[derive(Fields)]
 pub struct CourseForPublish {
 	state: CourseState,
@@ -136,6 +146,15 @@ impl CourseBmc {
 		Ok(course_id)
 	}
 
+	pub async fn edit_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		course_for_u: CourseForUpdate,
+		course_id: i64,
+	) -> Result<()> {
+		base::update::<Self, _>(&ctx, mm, course_id, course_for_u).await
+	}
+
 	pub async fn publish_course(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -147,9 +166,7 @@ impl CourseBmc {
 			published_date: now_utc,
 		};
 
-		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
-
-		Ok(())
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await
 	}
 
 	pub async fn archive_course(
@@ -161,9 +178,7 @@ impl CourseBmc {
     		state: CourseState::Archived,
 		};
 
-		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
-
-		Ok(())
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await
 	}
 
 	pub async fn register_for_course(
@@ -178,9 +193,7 @@ impl CourseBmc {
 			return Err(Error::CourseStateMustBePublished { course_id });
 		}
 
-		UsersCoursesBmc::create(mm, users_courses_c).await?;
-
-		Ok(())
+		UsersCoursesBmc::create(mm, users_courses_c).await
 	}
 	
 	pub async fn list(
