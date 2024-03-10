@@ -7,6 +7,7 @@ mod web;
 
 pub use self::error::{Error, Result};
 use config::web_config;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use utoipa::openapi::security::Http;
 
@@ -98,6 +99,12 @@ async fn main() -> Result<()> {
 	let routes_course = web::routes_course::routes(mm.clone())
 		.route_layer(middleware::from_fn(mw_ctx_require));
 
+	let cors = CorsLayer::new()
+		.allow_methods(Any)
+		.allow_headers(Any)
+		.allow_origin(Any)
+		.allow_credentials(true);
+
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
 		.layer(middleware::map_response(mw_reponse_map))
@@ -107,7 +114,8 @@ async fn main() -> Result<()> {
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
 		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-		.fallback_service(routes_static::serve_dir());
+		.fallback_service(routes_static::serve_dir())
+		.layer(cors);
 
 	// region:    --- Start Server
 	// Note: For this block, ok to unwrap.

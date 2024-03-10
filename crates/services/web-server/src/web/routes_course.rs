@@ -1,5 +1,5 @@
 use axum::{extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
+use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseForUpdate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 
 use crate::web::Result;
 
-use super::{file_upload::upload_file, mw_auth::CtxW};
+use super::{file_upload::{remove_file, upload_file}, mw_auth::CtxW};
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
@@ -260,16 +260,36 @@ async fn api_get_courses(
 	)
 )]
 async fn api_set_course_img_handler(
+	ctx: CtxW,
+	State(mm): State<ModelManager>,
 	Path(course_id): Path<i64>,
 	mut multipart: Multipart,
 ) -> Result<Json<Value>> {
+	let ctx = ctx.0;
+
     while let Some(field) = multipart.next_field().await.unwrap() {
         let field_name = field.name().unwrap().to_string();
 		
         if field_name == "image" {
             let data = field.bytes().await.unwrap();
 
+			let course: Course = CourseBmc::get(&ctx, &mm, course_id).await?;
+			if let Some(old_img_url) = course.img_url {
+				remove_file(old_img_url).await?;
+			}
+
 			let img_url = upload_file(data).await.unwrap();
+
+			let course_for_u = CourseForUpdate { 
+				title: None, 
+				description: None, 
+				course_type: None, 
+				price: None, 
+				color: None, 
+				img_url: Some(img_url.clone()),
+			};
+
+			CourseBmc::edit_course(&ctx, &mm, course_for_u, course_id).await?;
 
 			let body = Json(json!({
 				"result": {
@@ -317,7 +337,7 @@ async fn api_register_for_course(
     	user_role: lib_core::model::users_courses::UserCourseRole::Student,
 	};
 
-	UsersCoursesBmc::create(&mm, users_courses_c).await?;
+	CourseBmc::register_for_course(&ctx, &mm, users_courses_c).await?;
 
 	let body = Json(json!({
 		"result": {

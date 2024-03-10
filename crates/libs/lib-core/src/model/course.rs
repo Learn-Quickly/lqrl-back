@@ -31,7 +31,7 @@ pub struct Course {
 	pub state: CourseState,
 }
 
-#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
+#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize, PartialEq, Eq)]
 #[sqlx(type_name = "course_state")]
 pub enum CourseState {
     Draft,
@@ -54,9 +54,20 @@ pub struct CourseForCreate {
 	pub color: String,
 }
 
+#[derive(Fields)] 
+pub struct CourseForUpdate {
+	pub title: Option<String>,
+	pub description: Option<String>,
+	pub course_type: Option<String>,
+	pub price: Option<f64>,
+	pub color: Option<String>,
+	pub img_url: Option<String>,
+}
+
 #[derive(Fields)]
 pub struct CourseForPublish {
 	state: CourseState,
+	published_date: OffsetDateTime,
 }
 
 #[derive(Fields)]
@@ -135,22 +146,27 @@ impl CourseBmc {
 		Ok(course_id)
 	}
 
+	pub async fn edit_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		course_for_u: CourseForUpdate,
+		course_id: i64,
+	) -> Result<()> {
+		base::update::<Self, _>(&ctx, mm, course_id, course_for_u).await
+	}
+
 	pub async fn publish_course(
 		ctx: &Ctx,
 		mm: &ModelManager,
 		course_id: i64,
 	) -> Result<()> {
+		let now_utc = lib_utils::time::now_utc();
 		let course_for_publish = CourseForPublish {
     		state: CourseState::Published,
+			published_date: now_utc,
 		};
 
-		mm.dbx.begin_txn().await?;
-
-		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
-
-		mm.dbx().commit_txn().await?;
-
-		Ok(())
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await
 	}
 
 	pub async fn archive_course(
@@ -162,13 +178,22 @@ impl CourseBmc {
     		state: CourseState::Archived,
 		};
 
-		mm.dbx.begin_txn().await?;
+		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await
+	}
 
-		base::update::<Self, _>(&ctx, &mm, course_id, course_for_publish).await?;
+	pub async fn register_for_course(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		users_courses_c: UsersCoursesForCreate,
+	) -> Result<()> {
+		let course_id = users_courses_c.course_id;
+		let course: Course = Self::get(ctx, mm, course_id).await?;
 
-		mm.dbx().commit_txn().await?;
+		if !course.state.eq(&CourseState::Published) {
+			return Err(Error::CourseStateMustBePublished { course_id });
+		}
 
-		Ok(())
+		UsersCoursesBmc::create(mm, users_courses_c).await
 	}
 	
 	pub async fn list(
