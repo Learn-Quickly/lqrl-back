@@ -102,7 +102,8 @@ async fn main() -> Result<()> {
 	let cors = CorsLayer::new()
 		.allow_methods(Any)
 		.allow_headers(Any)
-		.allow_origin(Any);
+		.allow_origin(Any)
+		.allow_credentials(true);
 
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
