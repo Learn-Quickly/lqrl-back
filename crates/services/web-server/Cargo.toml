@@ -7,7 +7,7 @@ edition = "2021"
 # -- App Libs
 lib-utils = { path = "../../libs/lib-utils"}
 lib-auth = { path = "../../libs/lib-auth"}
-lib-core = { path = "../../libs/lib-core"}
+lib-db = { path = "../../libs/lib-db"}
 # -- Async
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"

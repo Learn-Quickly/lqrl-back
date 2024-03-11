@@ -1,5 +1,5 @@
 use axum::{extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_core::model::{course::{Course, CourseBmc, CourseForCreate, CourseForUpdate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
+use lib_db::model::{course::{Course, CourseBmc, CourseForCreate, CourseForUpdate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
@@ -334,7 +334,7 @@ async fn api_register_for_course(
 	let users_courses_c = UsersCoursesForCreate {
     	user_id: ctx.user_id(),
     	course_id: course_id.course_id,
-    	user_role: lib_core::model::users_courses::UserCourseRole::Student,
+    	user_role: lib_db::model::users_courses::UserCourseRole::Student,
 	};
 
 	CourseBmc::register_for_course(&ctx, &mm, users_courses_c).await?;

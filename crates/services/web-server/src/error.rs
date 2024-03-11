@@ -1,5 +1,5 @@
 use derive_more::From;
-use lib_core::model;
+use lib_db::model;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
