@@ -1,4 +1,3 @@
-use crate::web::{Error, Result};
 use async_trait::async_trait;
 use axum::body::Body;
 use axum::extract::FromRequestParts;
@@ -11,6 +10,8 @@ use time::OffsetDateTime;
 use tracing::debug;
 use uuid::Uuid;
 
+use crate::error::{AppError, AppResult};
+
 #[derive(Debug, Clone)]
 pub struct ReqStamp {
 	pub uuid: Uuid,
@@ -20,7 +21,7 @@ pub struct ReqStamp {
 pub async fn mw_req_stamp_resolver(
 	mut req: Request<Body>,
 	next: Next,
-) -> Result<Response> {
+) -> AppResult<Response> {
 	debug!("{:<12} - mw_req_stamp_resolver", "MIDDLEWARE");
 
 	let time_in = now_utc();
@@ -34,16 +35,16 @@ pub async fn mw_req_stamp_resolver(
 // region:    --- ReqStamp Extractor
 #[async_trait]
 impl<S: Send + Sync> FromRequestParts<S> for ReqStamp {
-	type Rejection = Error;
+	type Rejection = AppError;
 
-	async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
+	async fn from_request_parts(parts: &mut Parts, _state: &S) -> AppResult<Self> {
 		debug!("{:<12} - ReqStamp", "EXTRACTOR");
 
 		parts
 			.extensions
 			.get::<ReqStamp>()
 			.cloned()
-			.ok_or(Error::ReqStampNotInReqExt)
+			.ok_or(AppError::ReqStampNotInReqExt)
 	}
 }
 // endregion: --- ReqStamp Extractor

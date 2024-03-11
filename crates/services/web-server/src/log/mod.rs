@@ -1,6 +1,4 @@
-use crate::web::mw_req_stamp::ReqStamp;
-use crate::web::{self, ClientError};
-use crate::Result;
+use crate::{error::{AppError, ClientError}, web::mw_req_stamp::ReqStamp};
 use axum::http::{Method, Uri};
 use lib_core::ctx::Ctx;
 use lib_utils::time::{format_time, now_utc};
@@ -9,18 +7,19 @@ use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use time::Duration;
 use tracing::debug;
+use crate::AppResult;
 
 pub async fn log_request(
 	http_method: Method,
 	uri: Uri,
 	req_stamp: ReqStamp,
 	ctx: Option<Ctx>,
-	web_error: Option<&web::Error>,
+	app_error: Option<&AppError>,
 	client_error: Option<ClientError>,
-) -> Result<()> {
+) -> AppResult<()> {
 	// -- Prep error
-	let error_type = web_error.map(|se| se.as_ref().to_string());
-	let error_data = serde_json::to_value(web_error)
+	let error_type = app_error.map(|se| se.as_ref().to_string());
+	let error_data = serde_json::to_value(app_error)
 		.ok()
 		.and_then(|mut v| v.get_mut("data").map(|v| v.take()));
 

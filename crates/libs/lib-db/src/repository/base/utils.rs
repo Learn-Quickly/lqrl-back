@@ -1,4 +1,4 @@
-use crate::model::base::{CommonIden, DbBmc, TimestampIden};
+use crate::repository::base::{CommonIden, DbRepository, TimestampIden};
 use lib_utils::time::now_utc;
 use modql::field::{Field, Fields};
 use sea_query::IntoIden;
@@ -6,7 +6,7 @@ use sea_query::IntoIden;
 /// This method must be called when a model controller intends to create its entity.
 pub fn prep_fields_for_create<MC>(fields: &mut Fields, user_id: i64)
 where
-	MC: DbBmc,
+	MC: DbRepository,
 {
 	if MC::has_owner_id() {
 		fields.push(Field::new(CommonIden::OwnerId.into_iden(), user_id.into()));
@@ -19,7 +19,7 @@ where
 /// This method must be calledwhen a Model Controller plans to update its entity.
 pub fn prep_fields_for_update<MC>(fields: &mut Fields, user_id: i64)
 where
-	MC: DbBmc,
+	MC: DbRepository,
 {
 	if MC::has_timestamps() {
 		add_timestamps_for_update(fields, user_id);

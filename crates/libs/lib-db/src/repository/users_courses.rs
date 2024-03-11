@@ -1,11 +1,12 @@
 use derive_more::Display;
+use lib_core::model::course::UserCourseRole;
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
-use crate::model::{Result, Error};
+use crate::repository::Result;
 
-use super::{base::DbBmc, ModelManager};
+use super::{base::DbRepository, error::DbError, DbManager};
 
 #[derive(Iden)]
 pub enum UserCourseIden {
@@ -15,14 +16,32 @@ pub enum UserCourseIden {
 
 #[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
 #[sqlx(type_name = "user_course_roles")]
-pub enum UserCourseRole {
+pub enum UserCourseRoleRequest {
     Student,
     Creator,
 }
 
-impl From<UserCourseRole> for sea_query::Value {
-	fn from(value: UserCourseRole) -> Self {
+impl From<UserCourseRoleRequest> for sea_query::Value {
+	fn from(value: UserCourseRoleRequest) -> Self {
 		value.to_string().into()
+	}
+}
+
+impl From<UserCourseRole> for UserCourseRoleRequest {
+	fn from(value: UserCourseRole) -> Self {
+		match value {
+			UserCourseRole::Creator => UserCourseRoleRequest::Creator,
+			UserCourseRole::Student => UserCourseRoleRequest::Student,
+		}
+	}
+}
+
+impl From<UserCourseRoleRequest> for UserCourseRole {
+	fn from(value: UserCourseRoleRequest) -> Self {
+		match value {
+			UserCourseRoleRequest::Creator => UserCourseRole::Creator,
+			UserCourseRoleRequest::Student => UserCourseRole::Student,
+		}
 	}
 }
 
@@ -31,7 +50,7 @@ pub struct UsersCoursesForCreate {
     pub user_id: i64,
     pub course_id: i64,
 	#[field(cast_as = "user_course_roles")]
-    pub user_role: UserCourseRole,
+    pub user_role: UserCourseRoleRequest,
 }
 
 pub struct UsersCoursesForDelete {
@@ -39,9 +58,9 @@ pub struct UsersCoursesForDelete {
     pub course_id: i64,
 }
 
-pub struct UsersCoursesBmc;
+pub struct UsersCoursesController;
 
-impl DbBmc for UsersCoursesBmc {
+impl DbRepository for UsersCoursesController {
     const TABLE: &'static str = "users_courses";
 
 	fn has_timestamps() -> bool {
@@ -49,9 +68,9 @@ impl DbBmc for UsersCoursesBmc {
 	}
 }
 
-impl UsersCoursesBmc {
+impl UsersCoursesController {
     pub async fn create(
-        mm: &ModelManager,
+        dbm: &DbManager,
         users_courses_c: UsersCoursesForCreate,
     ) -> Result<()> {
 	    let fields = users_courses_c.not_none_fields();
@@ -67,13 +86,13 @@ impl UsersCoursesBmc {
 	    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	    let sqlx_query = sqlx::query_as_with::<_, (i64, i64), _>(&sql, values);
 
-	    let (_, _) = mm.dbx().fetch_one(sqlx_query).await?;
+	    let (_, _) = dbm.dbx().fetch_one(sqlx_query).await?;
 
 	    Ok(())
     }
 
 	pub async fn delete(
-		mm: &ModelManager,
+		dbm: &DbManager,
 		users_courses_d: UsersCoursesForDelete,
 	) -> Result<()> {
 		// -- Build query
@@ -86,11 +105,11 @@ impl UsersCoursesBmc {
 		// -- Execute query
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_with(&sql, values);
-		let count = mm.dbx().execute(sqlx_query).await?;
+		let count = dbm.dbx().execute(sqlx_query).await?;
 
 		// -- Check result
 		if count == 0 {
-			Err(Error::UserCourseNotFound {
+			Err(DbError::UserCourseNotFound {
 				entity: Self::TABLE,
 				user_id: users_courses_d.user_id,
 				course_id: users_courses_d.course_id,

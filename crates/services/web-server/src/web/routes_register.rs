@@ -1,15 +1,16 @@
-use crate::web::Result;
 use axum::{extract::State, routing::post, Json, Router};
 use lib_core::ctx::Ctx;
-use lib_db::model::{user::{UserBmc, UserForCreate}, ModelManager};
+use lib_db::repository::{user::{UserBmc, UserForCreate}, DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use utoipa::ToSchema;
 
-pub fn routes(mm: ModelManager) -> Router {
+use crate::error::AppResult;
+
+pub fn routes(dbm: DbManager) -> Router {
 	Router::new()
 		.route("/api/register", post(api_register_handler))
-		.with_state(mm)
+		.with_state(dbm)
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -29,16 +30,16 @@ pub struct RegisterPayload {
 	)
 )]
 async fn api_register_handler(
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(payload): Json<RegisterPayload>,
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
     let ctx = Ctx::root_ctx();
 
     let user_c = UserForCreate {
         username: payload.username,
         pwd_clear: payload.pwd,
     };
-    UserBmc::create(&ctx, &mm, user_c).await?;
+    UserBmc::create(&ctx, &dbm, user_c).await?;
 
 	let body = Json(json!({
 		"result": {

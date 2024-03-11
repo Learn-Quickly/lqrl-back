@@ -1,4 +1,3 @@
-use crate::web::{Error, Result};
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
@@ -6,20 +5,22 @@ use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
 use lib_core::ctx::Ctx;
-use lib_db::model::user::{UserBmc, UserForAuth, UserForLogin};
-use lib_db::model::ModelManager;
+use lib_db::repository::user::{UserBmc, UserForAuth, UserForLogin};
+use lib_db::repository::DbManager;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tracing::debug;
 use utoipa::ToSchema;
 
+use crate::error::{AppError, AppResult};
+
 use super::mw_auth::CtxExtError;
 
-pub fn routes(mm: ModelManager) -> Router {
+pub fn routes(dbm: DbManager) -> Router {
 	Router::new()
 		.route("/api/login", post(api_login_handler))
 		.route("/api/refresh_token", post(api_refresh_access_token_handler))
-		.with_state(mm)
+		.with_state(dbm)
 }
 
 // region:    --- Login
@@ -35,28 +36,28 @@ pub fn routes(mm: ModelManager) -> Router {
 	)
 )]
 async fn api_login_handler(
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	AuthBasic((username, pwd_clear)): AuthBasic,
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	debug!("{:<12} - api_login_handler", "HANDLER");
 
 	let root_ctx = Ctx::root_ctx();
 
 	// -- Get the user.
-	let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &mm, &username)
+	let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &dbm, &username)
 		.await?
-		.ok_or(Error::LoginFailUsernameNotFound)?;
+		.ok_or(AppError::LoginFailUsernameNotFound)?;
 
 	let user_id = user.id;
 
 	let pwd_clear = match pwd_clear {
     	Some(pwd) => pwd,
-    	None => return Err(Error::LoginFailUserHasNoPwd { user_id }),
+    	None => return Err(AppError::LoginFailUserHasNoPwd { user_id }),
 	};
 
 	// -- Validate the password.
 	let Some(pwd) = user.pwd else {
-		return Err(Error::LoginFailUserHasNoPwd { user_id });
+		return Err(AppError::LoginFailUserHasNoPwd { user_id });
 	};
 
 	let scheme_status = pwd::validate_pwd(
@@ -67,12 +68,12 @@ async fn api_login_handler(
 		pwd,
 	)
 	.await
-	.map_err(|_| Error::LoginFailPwdNotMatching { user_id })?;
+	.map_err(|_| AppError::LoginFailPwdNotMatching { user_id })?;
 
 	// -- Update password scheme if needed
 	if let SchemeStatus::Outdated = scheme_status {
 		debug!("pwd encrypt scheme outdated, upgrading.");
-		UserBmc::update_pwd(&root_ctx, &mm, user.id, &pwd_clear).await?;
+		UserBmc::update_pwd(&root_ctx, &dbm, user.id, &pwd_clear).await?;
 	}
 
 	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
@@ -108,14 +109,14 @@ pub struct RefreshTokenPayload {
 	)
 )]
 async fn api_refresh_access_token_handler(
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(payload): Json<RefreshTokenPayload>
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let refresh_token: Token = payload.refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
 	// -- Get UserForAuth
 	let user: UserForAuth =
-		UserBmc::first_by_username(&Ctx::root_ctx(), &mm, &refresh_token.ident)
+		UserBmc::first_by_username(&Ctx::root_ctx(), &dbm, &refresh_token.ident)
 			.await
 			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
 			.ok_or(CtxExtError::UserNotFound)?;

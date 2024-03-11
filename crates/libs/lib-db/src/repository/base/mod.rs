@@ -38,14 +38,14 @@ pub enum TimestampIden {
 
 // endregion: --- SeaQuery Idens
 
-/// The DbBmc trait must be implemented for the Bmc struct of an entity.
+/// The DbRepository trait must be implemented for the Bmc struct of an entity.
 /// It specifies meta information such as the table name,
 /// whether the table has timestamp columns (cid, ctime, mid, mtime), and more as the
 /// code evolves.
 ///
 /// Note: This trait should not be confused with the BaseCrudBmc trait, which provides
 ///       common default CRUD BMC functions for a given Bmc/Entity.
-pub trait DbBmc {
+pub trait DbRepository {
 	const TABLE: &'static str;
 
 	fn table_ref() -> TableRef {

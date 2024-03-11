@@ -1,7 +1,7 @@
-use crate::model::base::{self, prep_fields_for_update, DbBmc};
-use crate::model::modql_utils::time_to_sea_value;
-use crate::model::ModelManager;
-use crate::model::{Error, Result};
+use crate::repository::base::{self, prep_fields_for_update, DbRepository};
+use crate::repository::modql_utils::time_to_sea_value;
+use crate::repository::DbManager;
+use crate::repository::Result;
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::ctx::Ctx;
 use modql::field::{Field, Fields, HasFields};
@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 use uuid::Uuid;
+
+use super::error::DbError;
 
 #[derive(Clone, Fields, FromRow, Debug, Serialize)]
 pub struct User {
@@ -89,14 +91,14 @@ pub struct UserFilter {
 
 pub struct UserBmc;
 
-impl DbBmc for UserBmc {
+impl DbRepository for UserBmc {
 	const TABLE: &'static str = "user";
 }
 
 impl UserBmc {
 	pub async fn create(
 		ctx: &Ctx,
-		mm: &ModelManager,
+		dbm: &DbManager,
 		user_c: UserForCreate,
 	) -> Result<i64> {
 		let UserForCreate {
@@ -110,17 +112,17 @@ impl UserBmc {
 		};
 
 		// Start the transaction
-		let mm = mm.new_with_txn()?;
+		let dbm = dbm.new_with_txn()?;
 
-		mm.dbx().begin_txn().await?;
+		dbm.dbx().begin_txn().await?;
 
-		let user_id = base::create::<Self, _>(ctx, &mm, user_fi).await.map_err(
+		let user_id = base::create::<Self, _>(ctx, &dbm, user_fi).await.map_err(
 			|model_error| {
-				Error::resolve_unique_violation(
+				DbError::resolve_unique_violation(
 					model_error,
 					Some(|table: &str, constraint: &str| {
 						if table == "user" && constraint.contains("username") {
-							Some(Error::UserAlreadyExists { username })
+							Some(DbError::UserAlreadyExists { username })
 						} else {
 							None // Error::UniqueViolation will be created by resolve_unique_violation
 						}
@@ -130,24 +132,24 @@ impl UserBmc {
 		)?;
 
 		// -- Update the database
-		Self::update_pwd(ctx, &mm, user_id, &pwd_clear).await?;
+		Self::update_pwd(ctx, &dbm, user_id, &pwd_clear).await?;
 
 		// Commit the transaction
-		mm.dbx().commit_txn().await?;
+		dbm.dbx().commit_txn().await?;
 
 		Ok(user_id)
 	}
 
-	pub async fn get<E>(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
+	pub async fn get<E>(ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<E>
 	where
 		E: UserBy,
 	{
-		base::get::<Self, _>(ctx, mm, id).await
+		base::get::<Self, _>(ctx, dbm, id).await
 	}
 
 	pub async fn first_by_username<E>(
 		_ctx: &Ctx,
-		mm: &ModelManager,
+		dbm: &DbManager,
 		username: &str,
 	) -> Result<Option<E>>
 	where
@@ -164,28 +166,28 @@ impl UserBmc {
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
 		let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-		let entity = mm.dbx().fetch_optional(sqlx_query).await?;
+		let entity = dbm.dbx().fetch_optional(sqlx_query).await?;
 
 		Ok(entity)
 	}
 
 	pub async fn list(
 		ctx: &Ctx,
-		mm: &ModelManager,
+		dbm: &DbManager,
 		filter: Option<Vec<UserFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<User>> {
-		base::list::<Self, _, _>(ctx, mm, filter, list_options).await
+		base::list::<Self, _, _>(ctx, dbm, filter, list_options).await
 	}
 
 	pub async fn update_pwd(
 		ctx: &Ctx,
-		mm: &ModelManager,
+		dbm: &DbManager,
 		id: i64,
 		pwd_clear: &str,
 	) -> Result<()> {
 		// -- Prep password
-		let user: UserForLogin = Self::get(ctx, mm, id).await?;
+		let user: UserForLogin = Self::get(ctx, dbm, id).await?;
 		let pwd = pwd::hash_pwd(ContentToHash {
 			content: pwd_clear.to_string(),
 			salt: user.pwd_salt,
@@ -207,7 +209,7 @@ impl UserBmc {
 		// -- Exec query
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_with(&sql, values);
-		let _count = mm.dbx().execute(sqlx_query).await?;
+		let _count = dbm.dbx().execute(sqlx_query).await?;
 
 		Ok(())
 	}
@@ -219,8 +221,8 @@ impl UserBmc {
 	///       - The automatically set `mid`/`mtime` will record who performed the deletion.
 	///       - It's likely necessary to record this action in a `um_change_log` (a user management change audit table).
 	///       - Remove or clean up any user-specific assets (messages, etc.).
-	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()> {
-		base::delete::<Self>(ctx, mm, id).await
+	pub async fn delete(ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<()> {
+		base::delete::<Self>(ctx, dbm, id).await
 	}
 }
 
@@ -241,7 +243,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_create_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let mm = _dev_utils::init_test().await;
+		let dbm = _dev_utils::init_test().await;
 		let ctx = Ctx::root_ctx();
 		let fx_username = "test_create_ok-user-01";
 		let fx_pwd_clear = "test_create_ok pwd 01";
@@ -249,7 +251,7 @@ mod tests {
 		// -- Exec
 		let user_id = UserBmc::create(
 			&ctx,
-			&mm,
+			&dbm,
 			UserForCreate {
 				username: fx_username.to_string(),
 				pwd_clear: fx_pwd_clear.to_string(),
@@ -258,11 +260,11 @@ mod tests {
 		.await?;
 
 		// -- Check
-		let user: UserForLogin = UserBmc::get(&ctx, &mm, user_id).await?;
+		let user: UserForLogin = UserBmc::get(&ctx, &dbm, user_id).await?;
 		assert_eq!(user.username, fx_username);
 
 		// -- Clean
-		UserBmc::delete(&ctx, &mm, user_id).await?;
+		UserBmc::delete(&ctx, &dbm, user_id).await?;
 
 		Ok(())
 	}
@@ -271,12 +273,12 @@ mod tests {
 	#[tokio::test]
 	async fn test_first_ok_demo1() -> Result<()> {
 		// -- Setup & Fixtures
-		let mm = _dev_utils::init_test().await;
+		let dbm = _dev_utils::init_test().await;
 		let ctx = Ctx::root_ctx();
 		let fx_username = "demo1";
 
 		// -- Exec
-		let user: User = UserBmc::first_by_username(&ctx, &mm, fx_username)
+		let user: User = UserBmc::first_by_username(&ctx, &dbm, fx_username)
 			.await?
 			.ok_or("Should have user 'demo1'")?;
 

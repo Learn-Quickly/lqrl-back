@@ -1,5 +1,5 @@
-use crate::model::user::{User, UserBmc};
-use crate::model::ModelManager;
+use crate::repository::user::{User, UserBmc};
+use crate::repository::DbManager;
 use lib_core::ctx::Ctx;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
@@ -66,14 +66,14 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 	}
 
 	// -- Init model layer.
-	let mm = ModelManager::new().await?;
+	let dbm = DbManager::new().await?;
 	let ctx = Ctx::root_ctx();
 
 	// -- Set demo1 pwd
-	let demo1_user: User = UserBmc::first_by_username(&ctx, &mm, "demo1")
+	let demo1_user: User = UserBmc::first_by_username(&ctx, &dbm, "demo1")
 		.await?
 		.unwrap();
-	UserBmc::update_pwd(&ctx, &mm, demo1_user.id, DEMO_PWD).await?;
+	UserBmc::update_pwd(&ctx, &dbm, demo1_user.id, DEMO_PWD).await?;
 	info!("{:<12} - init_dev_db - set demo1 pwd", "FOR-DEV-ONLY");
 
 	Ok(())

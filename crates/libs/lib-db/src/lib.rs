@@ -1,5 +1,5 @@
 pub mod config;
-pub mod model;
+pub mod repository;
 
 // #[cfg(test)] // Commented during early development.
 pub mod _dev_utils;

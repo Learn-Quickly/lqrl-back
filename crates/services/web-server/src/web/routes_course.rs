@@ -1,16 +1,17 @@
 use axum::{extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_db::model::{course::{Course, CourseBmc, CourseForCreate, CourseForUpdate, CourseState}, users_courses::{UsersCoursesBmc, UsersCoursesForCreate, UsersCoursesForDelete}, ModelManager};
+use lib_core::{core::course::CourseController, model::course::CourseForCreate};
+use lib_db::repository::{course::CourseRepository, DbManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
-use crate::web::Result;
+use crate::error::AppResult;
 
 use super::{file_upload::{remove_file, upload_file}, mw_auth::CtxW};
 
-pub fn routes(mm: ModelManager) -> Router {
+pub fn routes(dbm: DbManager) -> Router {
 	Router::new()
 		.route("/set_course_img/:i64", post(api_set_course_img_handler))
 		.route("/create_course_draft", post(api_create_course_draft))
@@ -20,7 +21,7 @@ pub fn routes(mm: ModelManager) -> Router {
 		.route("/unsubscribe_from_course", post(api_unsubscribe_from_course))
 		.route("/get_course/:i64", get(api_get_course))
 		.route("/get_courses/", post(api_get_courses))
-		.with_state(mm)
+		.with_state(dbm)
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -51,9 +52,9 @@ pub struct CreatedCourseDraft {
 )]
 async fn api_create_course_draft(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(paylod): Json<CourseCreateDraftPayload>
-) -> Result<Json<CreatedCourseDraft>> {
+) -> AppResult<Json<CreatedCourseDraft>> {
 	let ctx = ctx.0;
 
 	let course_c = CourseForCreate {
@@ -64,7 +65,9 @@ async fn api_create_course_draft(
     	color: paylod.color,
 	};
 
-	let course_id = CourseBmc::create_draft(&ctx, &mm, course_c).await?;
+	let repository = Box::new(CourseRepository::new(dbm));
+
+	let course_id = CourseController::create_draft(&ctx, repository, course_c).await?;
 
 	let created_course_draft = CreatedCourseDraft {
     	course_id,
@@ -93,12 +96,14 @@ pub struct CourseId {
 )]
 async fn api_publish_course(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>,
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	CourseBmc::publish_course(&ctx, &mm, course_id.course_id).await?;
+	let repository = Box::new(CourseRepository::new(dbm));
+
+	CourseController::publish_course(&ctx, repository, course_id.course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -122,12 +127,14 @@ async fn api_publish_course(
 )]
 async fn api_archive_course(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>,
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	CourseBmc::archive_course(&ctx, &mm, course_id.course_id).await?;
+	let repository = Box::new(CourseRepository::new(dbm));
+
+	CourseController::archive_course(&ctx, repository, course_id.course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -183,12 +190,12 @@ impl From<Course> for CoursePayload {
 )]
 async fn api_get_course(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Path(course_id): Path<i64>,
-) -> Result<Json<CoursePayload>> {
+) -> AppResult<Json<CoursePayload>> {
 	let ctx = ctx.0;
 
-	let course: Course = CourseBmc::get(&ctx, &mm, course_id).await?;
+	let course: Course = CourseBmc::get(&ctx, &dbm, course_id).await?;
 
 	Ok(Json(course.into()))
 }
@@ -222,9 +229,9 @@ pub struct CourseFilterPayload {
 )]
 async fn api_get_courses(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(filter_payload): Json<CourseFilterPayload>,
-) -> Result<Json<Vec<CoursePayload>>> {
+) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
 
 	let filters = if let Some(filters) = filter_payload.filters {
@@ -239,7 +246,7 @@ async fn api_get_courses(
 		None
 	};
 
-	let courses: Vec<Course> = CourseBmc::list(&ctx, &mm, filters, list_options).await?;
+	let courses: Vec<Course> = CourseBmc::list(&ctx, &dbm, filters, list_options).await?;
 	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
 	Ok(Json(body))
@@ -261,10 +268,10 @@ async fn api_get_courses(
 )]
 async fn api_set_course_img_handler(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Path(course_id): Path<i64>,
 	mut multipart: Multipart,
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
     while let Some(field) = multipart.next_field().await.unwrap() {
@@ -273,7 +280,7 @@ async fn api_set_course_img_handler(
         if field_name == "image" {
             let data = field.bytes().await.unwrap();
 
-			let course: Course = CourseBmc::get(&ctx, &mm, course_id).await?;
+			let course: Course = CourseBmc::get(&ctx, &dbm, course_id).await?;
 			if let Some(old_img_url) = course.img_url {
 				remove_file(old_img_url).await?;
 			}
@@ -289,7 +296,7 @@ async fn api_set_course_img_handler(
 				img_url: Some(img_url.clone()),
 			};
 
-			CourseBmc::edit_course(&ctx, &mm, course_for_u, course_id).await?;
+			CourseBmc::edit_course(&ctx, &dbm, course_for_u, course_id).await?;
 
 			let body = Json(json!({
 				"result": {
@@ -326,18 +333,18 @@ async fn api_set_course_img_handler(
 )]
 async fn api_register_for_course(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
 	let users_courses_c = UsersCoursesForCreate {
     	user_id: ctx.user_id(),
     	course_id: course_id.course_id,
-    	user_role: lib_db::model::users_courses::UserCourseRole::Student,
+    	user_role: lib_db::repository::users_courses::UserCourseRole::Student,
 	};
 
-	CourseBmc::register_for_course(&ctx, &mm, users_courses_c).await?;
+	CourseBmc::register_for_course(&ctx, &dbm, users_courses_c).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -361,9 +368,9 @@ async fn api_register_for_course(
 )]
 async fn api_unsubscribe_from_course(
 	ctx: CtxW,
-	State(mm): State<ModelManager>,
+	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>
-) -> Result<Json<Value>> {
+) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
 	let users_courses_d = UsersCoursesForDelete {
@@ -371,7 +378,7 @@ async fn api_unsubscribe_from_course(
     	course_id: course_id.course_id,
 	};
 
-	UsersCoursesBmc::delete(&mm, users_courses_d).await?;
+	UsersCoursesBmc::delete(&dbm, users_courses_d).await?;
 
 	let body = Json(json!({
 		"result": {

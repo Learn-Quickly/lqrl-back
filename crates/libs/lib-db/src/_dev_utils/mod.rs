@@ -2,7 +2,7 @@
 
 mod dev_db;
 
-use crate::model::{self, ModelManager};
+use crate::repository::{self, DbManager};
 use lib_core::ctx::Ctx;
 use modql::filter::OpValString;
 use tokio::sync::OnceCell;
@@ -24,31 +24,31 @@ pub async fn init_dev() {
 }
 
 /// Initialize test environment.
-pub async fn init_test() -> ModelManager {
-	static INIT: OnceCell<ModelManager> = OnceCell::const_new();
+pub async fn init_test() -> DbManager {
+	static INIT: OnceCell<DbManager> = OnceCell::const_new();
 
-	let mm = INIT
+	let dbm = INIT
 		.get_or_init(|| async {
 			init_dev().await;
 			// NOTE: Rare occasion where unwrap is kind of ok.
-			ModelManager::new().await.unwrap()
+			DbManager::new().await.unwrap()
 		})
 		.await;
 
-	mm.clone()
+	dbm.clone()
 }
 
 // region:    --- User seed/clean
 
 pub async fn seed_users(
 	ctx: &Ctx,
-	mm: &ModelManager,
+	dbm: &DbManager,
 	usernames: &[&str],
-) -> model::Result<Vec<i64>> {
+) -> repository::Result<Vec<i64>> {
 	let mut ids = Vec::new();
 
 	for name in usernames {
-		let id = seed_user(ctx, mm, name).await?;
+		let id = seed_user(ctx, dbm, name).await?;
 		ids.push(id);
 	}
 
@@ -57,15 +57,15 @@ pub async fn seed_users(
 
 pub async fn seed_user(
 	ctx: &Ctx,
-	mm: &ModelManager,
+	dbm: &DbManager,
 	username: &str,
-) -> model::Result<i64> {
+) -> repository::Result<i64> {
 	let pwd_clear = "seed-user-pwd";
 
-	let id = model::user::UserBmc::create(
+	let id = repository::user::UserBmc::create(
 		ctx,
-		mm,
-		model::user::UserForCreate {
+		dbm,
+		repository::user::UserForCreate {
 			username: username.to_string(),
 			pwd_clear: pwd_clear.to_string(),
 		},
@@ -77,13 +77,13 @@ pub async fn seed_user(
 
 pub async fn clean_users(
 	ctx: &Ctx,
-	mm: &ModelManager,
+	dbm: &DbManager,
 	contains_username: &str,
-) -> model::Result<usize> {
-	let users = model::user::UserBmc::list(
+) -> repository::Result<usize> {
+	let users = repository::user::UserBmc::list(
 		ctx,
-		mm,
-		Some(vec![model::user::UserFilter {
+		dbm,
+		Some(vec![repository::user::UserFilter {
 			username: Some(
 				OpValString::Contains(contains_username.to_string()).into(),
 			),
@@ -95,7 +95,7 @@ pub async fn clean_users(
 	let count = users.len();
 
 	for user in users {
-		model::user::UserBmc::delete(ctx, mm, user.id).await?;
+		repository::user::UserBmc::delete(ctx, dbm, user.id).await?;
 	}
 
 	Ok(count)

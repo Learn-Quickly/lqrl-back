@@ -1,9 +1,10 @@
-use crate::model::base::{
-	prep_fields_for_create, prep_fields_for_update, CommonIden, DbBmc,
+use crate::repository::base::{
+	prep_fields_for_create, prep_fields_for_update, CommonIden, DbRepository,
 	LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX,
 };
-use crate::model::ModelManager;
-use crate::model::{Error, Result};
+use crate::repository::error::DbError;
+use crate::repository::DbManager;
+use crate::repository::Result;
 use lib_core::ctx::Ctx;
 use modql::field::HasFields;
 use modql::filter::{FilterGroups, ListOptions};
@@ -12,9 +13,9 @@ use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 
-pub async fn create<MC, E>(ctx: &Ctx, mm: &ModelManager, data: E) -> Result<i64>
+pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> Result<i64>
 where
-	MC: DbBmc,
+	MC: DbRepository,
 	E: HasFields,
 {
 	let user_id = ctx.user_id();
@@ -37,14 +38,14 @@ where
 	let sqlx_query = sqlx::query_as_with::<_, (i64,), _>(&sql, values);
 	// NOTE: For now, we will use the _txn for all create.
 	//       We could have a with_txn as function argument if perf is an issue (it should not be)
-	let (id,) = mm.dbx().fetch_one(sqlx_query).await?;
+	let (id,) = dbm.dbx().fetch_one(sqlx_query).await?;
 
 	Ok(id)
 }
 
-pub async fn get<MC, E>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<E>
+pub async fn get<MC, E>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<E>
 where
-	MC: DbBmc,
+	MC: DbRepository,
 	E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
 	E: HasFields,
 {
@@ -59,10 +60,10 @@ where
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
 	let entity =
-		mm.dbx()
+		dbm.dbx()
 			.fetch_optional(sqlx_query)
 			.await?
-			.ok_or(Error::EntityNotFound {
+			.ok_or(DbError::EntityNotFound {
 				entity: MC::TABLE,
 				id,
 			})?;
@@ -72,12 +73,12 @@ where
 
 pub async fn list<MC, E, F>(
 	_ctx: &Ctx,
-	mm: &ModelManager,
+	dbm: &DbManager,
 	filter: Option<F>,
 	list_options: Option<ListOptions>,
 ) -> Result<Vec<E>>
 where
-	MC: DbBmc,
+	MC: DbRepository,
 	F: Into<FilterGroups>,
 	E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
 	E: HasFields,
@@ -100,19 +101,19 @@ where
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
 	let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-	let entities = mm.dbx().fetch_all(sqlx_query).await?;
+	let entities = dbm.dbx().fetch_all(sqlx_query).await?;
 
 	Ok(entities)
 }
 
 pub async fn update<MC, E>(
 	ctx: &Ctx,
-	mm: &ModelManager,
+	dbm: &DbManager,
 	id: i64,
 	data: E,
 ) -> Result<()>
 where
-	MC: DbBmc,
+	MC: DbRepository,
 	E: HasFields,
 {
 	// -- Prep Fields
@@ -130,11 +131,11 @@ where
 	// -- Execute query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_with(&sql, values);
-	let count = mm.dbx().execute(sqlx_query).await?;
+	let count = dbm.dbx().execute(sqlx_query).await?;
 
 	// -- Check result
 	if count == 0 {
-		Err(Error::EntityNotFound {
+		Err(DbError::EntityNotFound {
 			entity: MC::TABLE,
 			id,
 		})
@@ -143,9 +144,9 @@ where
 	}
 }
 
-pub async fn delete<MC>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()>
+pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<()>
 where
-	MC: DbBmc,
+	MC: DbRepository,
 {
 	// -- Build query
 	let mut query = Query::delete();
@@ -156,11 +157,11 @@ where
 	// -- Execute query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_with(&sql, values);
-	let count = mm.dbx().execute(sqlx_query).await?;
+	let count = dbm.dbx().execute(sqlx_query).await?;
 
 	// -- Check result
 	if count == 0 {
-		Err(Error::EntityNotFound {
+		Err(DbError::EntityNotFound {
 			entity: MC::TABLE,
 			id,
 		})
@@ -176,7 +177,7 @@ pub fn compute_list_options(
 		// Validate the limit.
 		if let Some(limit) = list_options.limit {
 			if limit > LIST_LIMIT_MAX {
-				return Err(Error::ListLimitOverMax {
+				return Err(DbError::ListLimitOverMax {
 					max: LIST_LIMIT_MAX,
 					actual: limit,
 				});

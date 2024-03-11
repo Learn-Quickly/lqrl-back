@@ -4,7 +4,7 @@ mod error;
 
 pub use error::{Error, Result};
 
-use crate::model::store::Db;
+use crate::repository::store::Db;
 use sqlx::postgres::any::AnyConnectionBackend;
 use sqlx::query::{Query, QueryAs};
 use sqlx::{FromRow, IntoArguments, Pool, Postgres, Transaction};

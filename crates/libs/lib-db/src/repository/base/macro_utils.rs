@@ -14,58 +14,58 @@ macro_rules! generate_common_bmc_fns {
 			$(
 				pub async fn create(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					entity_c: $for_create,
 				) -> Result<i64> {
-					base::create::<Self, _>(ctx, mm, entity_c).await
+					base::create::<Self, _>(ctx, dbm, entity_c).await
 				}
 			)?
 
 				pub async fn get(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					id: i64,
 				) -> Result<$entity> {
-					base::get::<Self, _>(ctx, mm, id).await
+					base::get::<Self, _>(ctx, dbm, id).await
 				}
 
 			$(
 				pub async fn first(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					filter: Option<Vec<$filter>>,
 					list_options: Option<ListOptions>,
 				) -> Result<Option<$entity>> {
-					base::first::<Self, _, _>(ctx, mm, filter, list_options).await
+					base::first::<Self, _, _>(ctx, dbm, filter, list_options).await
 				}
 
 				pub async fn list(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					filter: Option<Vec<$filter>>,
 					list_options: Option<ListOptions>,
 				) -> Result<Vec<$entity>> {
-					base::list::<Self, _, _>(ctx, mm, filter, list_options).await
+					base::list::<Self, _, _>(ctx, dbm, filter, list_options).await
 				}
 			)?
 
 			$(
 				pub async fn update(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					id: i64,
 					entity_u: $for_update,
 				) -> Result<()> {
-					base::update::<Self, _>(ctx, mm, id, entity_u).await
+					base::update::<Self, _>(ctx, dbm, id, entity_u).await
 				}
 			)?
 
 				pub async fn delete(
 					ctx: &Ctx,
-					mm: &ModelManager,
+					dbm: &DbManager,
 					id: i64,
 				) -> Result<()> {
-					base::delete::<Self>(ctx, mm, id).await
+					base::delete::<Self>(ctx, dbm, id).await
 				}
 		}
 	};

@@ -1,15 +1,15 @@
 // region:    --- Modules
 
 mod config;
-mod error;
 mod log;
 mod web;
+mod error;
 
-pub use self::error::{Error, Result};
 use config::web_config;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use utoipa::openapi::security::Http;
+use error::AppResult;
 
 use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::web::mw_req_stamp::mw_req_stamp_resolver;
@@ -17,7 +17,7 @@ use crate::web::mw_res_map::mw_reponse_map;
 use crate::web::{routes_login, routes_register, routes_static, routes_course};
 use axum::{middleware, Router};
 use lib_db::_dev_utils;
-use lib_db::model::ModelManager;
+use lib_db::repository::DbManager;
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -30,7 +30,7 @@ use utoipa_swagger_ui::SwaggerUi;
 // endregion: --- Modules
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> AppResult<()> {
 	// region:    --- OpenApi
 	#[derive(OpenApi)]
     #[openapi(
@@ -94,9 +94,9 @@ async fn main() -> Result<()> {
 	// -- FOR DEV ONLY
 	_dev_utils::init_dev().await;
 
-	let mm = ModelManager::new().await?;
+	let dbm = DbManager::new().await?;
 
-	let routes_course = web::routes_course::routes(mm.clone())
+	let routes_course = web::routes_course::routes(dbm.clone())
 		.route_layer(middleware::from_fn(mw_ctx_require));
 
 	let cors = CorsLayer::new()
@@ -107,9 +107,9 @@ async fn main() -> Result<()> {
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
 		.layer(middleware::map_response(mw_reponse_map))
-		.layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolver))
-		.merge(routes_login::routes(mm.clone()))
-		.merge(routes_register::routes(mm.clone()))
+		.layer(middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
+		.merge(routes_login::routes(dbm.clone()))
+		.merge(routes_register::routes(dbm.clone()))
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
 		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))

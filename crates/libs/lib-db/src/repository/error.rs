@@ -1,4 +1,4 @@
-use crate::model::store::dbx;
+use crate::repository::store::dbx;
 use derive_more::From;
 use lib_auth::pwd;
 use serde::Serialize;
@@ -6,11 +6,11 @@ use serde_with::{serde_as, DisplayFromStr};
 use sqlx::error::DatabaseError;
 use std::borrow::Cow;
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, DbError>;
 
 #[serde_as]
 #[derive(Debug, Serialize, From)]
-pub enum Error {
+pub enum DbError {
 	EntityNotFound {
 		entity: &'static str,
 		id: i64,
@@ -39,9 +39,13 @@ pub enum Error {
 	CourseStateMustBePublished {
 		course_id: i64,
 	},
+	MissingFieldError {
+		entity: String,
+		field: String,
+	},
 
-	// -- ModelManager
-	CantCreateModelManagerProvider(String),
+	// -- DbManager
+	CantCreateDbManagerProvider(String),
 
 	// -- Modules
 	#[from]
@@ -57,7 +61,7 @@ pub enum Error {
 	ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
 }
 
-impl Error {
+impl DbError {
 	/// This function will transform the error into a more precise variant if it is an SQLX or PGError Unique Violation.
 	/// The resolver can contain a function (table_name: &str, constraint: &str) that may return a specific Error if desired.
 	/// If the resolver is None, or if the resolver function returns None, it will default to Error::UniqueViolation {table, constraint}.
@@ -72,7 +76,7 @@ impl Error {
 			Some((Some(Cow::Borrowed("23505")), Some(table), Some(constraint))) => {
 				resolver
 					.and_then(|fun| fun(table, constraint))
-					.unwrap_or_else(|| Error::UniqueViolation {
+					.unwrap_or_else(|| DbError::UniqueViolation {
 						table: table.to_string(),
 						constraint: constraint.to_string(),
 					})
@@ -85,17 +89,28 @@ impl Error {
 	/// if this Error is an SQLX Error that contains a database error.
 	pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
 		match self {
-			Error::Dbx(dbx::Error::Sqlx(sqlx_error)) => {
+			DbError::Dbx(dbx::Error::Sqlx(sqlx_error)) => {
 				sqlx_error.as_database_error()
 			}
 			_ => None,
 		}
 	}
+
+	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> Result<T> {
+		let result = value.unwrap_or(
+			Err(DbError::MissingFieldError { 
+				entity: entity.clone(),
+				field,
+			})?
+		);
+
+		Ok(result)
+	}
 }
 
 // region:    --- Error Boilerplate
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for DbError {
 	fn fmt(
 		&self,
 		fmt: &mut core::fmt::Formatter,
@@ -104,6 +119,6 @@ impl core::fmt::Display for Error {
 	}
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for DbError {}
 
 // endregion: --- Error Boilerplate
