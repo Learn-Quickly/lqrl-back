@@ -5,7 +5,7 @@ use axum::{Json, Router};
 use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
-use lib_db::ctx::Ctx;
+use lib_core::ctx::Ctx;
 use lib_db::model::user::{UserBmc, UserForAuth, UserForLogin};
 use lib_db::model::ModelManager;
 use serde::Deserialize;
