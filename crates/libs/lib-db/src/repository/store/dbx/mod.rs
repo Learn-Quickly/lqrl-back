@@ -2,7 +2,7 @@
 
 mod error;
 
-pub use error::{Error, Result};
+pub use error::{StoreError, Result};
 
 use crate::repository::store::Db;
 use sqlx::postgres::any::AnyConnectionBackend;
@@ -69,7 +69,7 @@ impl DerefMut for TxnHolder {
 impl Dbx {
 	pub async fn begin_txn(&self) -> Result<()> {
 		if !self.with_txn {
-			return Err(Error::CannotBeginTxnWithTxnFalse);
+			return Err(StoreError::CannotBeginTxnWithTxnFalse);
 		}
 
 		let mut txh_g = self.txn_holder.lock().await;
@@ -88,7 +88,7 @@ impl Dbx {
 
 	pub async fn commit_txn(&self) -> Result<()> {
 		if !self.with_txn {
-			return Err(Error::CannotCommitTxnWithTxnFalse);
+			return Err(StoreError::CannotCommitTxnWithTxnFalse);
 		}
 
 		let mut txh_g = self.txn_holder.lock().await;
@@ -107,7 +107,7 @@ impl Dbx {
 		}
 		// Ohterwise, we have an error
 		else {
-			Err(Error::TxnCantCommitNoOpenTxn)
+			Err(StoreError::TxnCantCommitNoOpenTxn)
 		}
 	}
 

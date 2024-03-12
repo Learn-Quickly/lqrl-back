@@ -1,9 +1,10 @@
 use derive_more::Display;
-use lib_core::model::course::UserCourseRole;
+use lib_core::model::course::{UserCourse, UserCourseRole};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 use crate::repository::Result;
 
 use super::{base::DbRepository, error::DbError, DbManager};
@@ -45,12 +46,22 @@ impl From<UserCourseRoleRequest> for UserCourseRole {
 	}
 }
 
-#[derive(Fields)]
-pub struct UsersCoursesForCreate {
+#[derive(Fields, FromRow)]
+pub struct UsersCoursesRequest {
     pub user_id: i64,
     pub course_id: i64,
 	#[field(cast_as = "user_course_roles")]
     pub user_role: UserCourseRoleRequest,
+}
+
+impl From<UsersCoursesRequest> for UserCourse {
+	fn from(value: UsersCoursesRequest) -> Self {
+		Self {
+    		user_id: value.user_id,
+    		course_id: value.course_id,
+    		user_role: value.user_role.into(),
+		}
+	}
 }
 
 pub struct UsersCoursesForDelete {
@@ -58,9 +69,9 @@ pub struct UsersCoursesForDelete {
     pub course_id: i64,
 }
 
-pub struct UsersCoursesController;
+pub struct UsersCoursesRepository;
 
-impl DbRepository for UsersCoursesController {
+impl DbRepository for UsersCoursesRepository {
     const TABLE: &'static str = "users_courses";
 
 	fn has_timestamps() -> bool {
@@ -68,10 +79,10 @@ impl DbRepository for UsersCoursesController {
 	}
 }
 
-impl UsersCoursesController {
+impl UsersCoursesRepository {
     pub async fn create(
         dbm: &DbManager,
-        users_courses_c: UsersCoursesForCreate,
+        users_courses_c: UsersCoursesRequest,
     ) -> Result<()> {
 	    let fields = users_courses_c.not_none_fields();
 
@@ -91,6 +102,55 @@ impl UsersCoursesController {
 	    Ok(())
     }
 
+	pub async fn get(
+		dbm: &DbManager,
+		user_id: i64,
+		course_id: i64,
+	) -> Result<UsersCoursesRequest> {
+		let mut query = Query::select();
+		query
+			.from(Self::table_ref())
+			.columns(UsersCoursesRequest::field_column_refs())
+			.and_where(Expr::col(UserCourseIden::UserId).eq(user_id))
+			.and_where(Expr::col(UserCourseIden::CourseId).eq(course_id));
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_as_with::<_, UsersCoursesRequest, _>(&sql, values);
+		let entity =
+			dbm.dbx()
+				.fetch_optional(sqlx_query)
+				.await?
+				.ok_or(DbError::UserCourseNotFound { 
+					entity: Self::TABLE, 
+					user_id, 
+					course_id,
+				})?;
+
+		Ok(entity)
+	}
+
+	pub async fn get_optional(
+		dbm: &DbManager, 
+		user_id: i64, 
+		course_id: i64
+	) -> Result<Option<UsersCoursesRequest>> {
+		let mut query = Query::select();
+		query
+			.from(Self::table_ref())
+			.columns(UsersCoursesRequest::field_column_refs())
+			.and_where(Expr::col(UserCourseIden::UserId).eq(user_id))
+			.and_where(Expr::col(UserCourseIden::CourseId).eq(course_id));
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_as_with::<_, UsersCoursesRequest, _>(&sql, values);
+		let entity =
+			dbm.dbx()
+				.fetch_optional(sqlx_query)
+				.await?;
+
+		Ok(entity)
+	}
+	
 	pub async fn delete(
 		dbm: &DbManager,
 		users_courses_d: UsersCoursesForDelete,

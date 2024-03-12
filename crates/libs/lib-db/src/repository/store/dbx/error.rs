@@ -2,11 +2,11 @@ use derive_more::From;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, StoreError>;
 
 #[serde_as]
 #[derive(Debug, Serialize, From)]
-pub enum Error {
+pub enum StoreError {
 	TxnCantCommitNoOpenTxn,
 	CannotBeginTxnWithTxnFalse,
 	CannotCommitTxnWithTxnFalse,
@@ -18,7 +18,7 @@ pub enum Error {
 
 // region:    --- Error Boilerplate
 
-impl core::fmt::Display for Error {
+impl core::fmt::Display for StoreError {
 	fn fmt(
 		&self,
 		fmt: &mut core::fmt::Formatter,
@@ -27,6 +27,6 @@ impl core::fmt::Display for Error {
 	}
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for StoreError {}
 
 // endregion: --- Error Boilerplate

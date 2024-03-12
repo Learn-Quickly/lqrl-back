@@ -19,4 +19,10 @@ pub trait ICourseRepository {
     async fn archive_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<()>;
 
     async fn create_user_course(&self, ctx: &Ctx, course_for_r: UserCourse) -> CourseResult<()>;
+
+    async fn get_user_course(&self, ctx: &Ctx, user_id: i64, course_id: i64) -> CourseResult<UserCourse>;
+    
+    async fn get_user_course_optional(&self, ctx: &Ctx, user_id: i64, course_id: i64) -> CourseResult<Option<UserCourse>>;
+
+    async fn delete_user_course(&self, ctx: &Ctx, user_id: i64, course_id: i64) -> CourseResult<()>;
 }

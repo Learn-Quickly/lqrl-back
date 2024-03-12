@@ -6,6 +6,7 @@ use axum::http::Request;
 use axum::middleware::Next;
 use axum::response::Response;
 use axum_auth::AuthBearer;
+use derive_more::Display;
 use lib_auth::token::{validate_web_token, Token};
 use lib_core::ctx::Ctx;
 use lib_db::repository::user::{UserBmc, UserForAuth};
@@ -93,7 +94,7 @@ impl<S: Send + Sync> FromRequestParts<S> for CtxW {
 // region:    --- Ctx Extractor Result/Error
 type CtxExtResult = core::result::Result<CtxW, CtxExtError>;
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Debug, Display)]
 pub enum CtxExtError {
 	TokenWrongFormat,
 
@@ -104,4 +105,7 @@ pub enum CtxExtError {
 	CtxNotInRequestExt,
 	CtxCreateFail(String),
 }
+
+impl std::error::Error for CtxExtError {}
+
 // endregion: --- Ctx Extractor Result/Error

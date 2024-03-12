@@ -17,7 +17,7 @@ use lib_utils::time::Rfc3339;
 
 use super::base::{self, DbRepository};
 use super::error::DbError;
-use super::users_courses::{UserCourseRoleRequest, UsersCoursesController, UsersCoursesForCreate};
+use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesRepository, UsersCoursesRequest};
 use super::DbManager;
 
 #[serde_as]
@@ -151,19 +151,26 @@ impl CourseRepository {
 		dbm: &DbManager,
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
-	) -> CourseResult<Vec<CourseRequest>> {
-		let result = base::list::<Self, _, _>(ctx, dbm, filter, list_options)
+	) -> CourseResult<Vec<Course>> {
+		let course_reqs = base::list::<Self, CourseRequest, _>(ctx, dbm, filter, list_options)
 			.await
 			.map_err(|db_err| Box::new(db_err))?;
+
+		let mut result = Vec::new();
+		for course_req in course_reqs {
+			let course = course_req.try_into()?;
+			result.push(course);
+		}
 
 		Ok(result)
 	}
 
-	async fn get(ctx: &Ctx, dbm: &DbManager, id: i64) -> CourseResult<CourseRequest>
+	async fn get(ctx: &Ctx, dbm: &DbManager, id: i64) -> CourseResult<Course>
 	{
-		let result = base::get::<Self, _>(ctx, dbm, id)
+		let result = base::get::<Self, CourseRequest>(ctx, dbm, id)
 			.await
-			.map_err(|db_err| Box::new(db_err))?;
+			.map_err(|db_err| Box::new(db_err))?
+			.try_into()?;
 
 		Ok(result)
 	}
@@ -174,7 +181,7 @@ impl ICourseRepository for CourseRepository {
 	async fn get_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<Course> {
 		let course_request = Self::get(&ctx, &self.dbm, course_id).await?;
 
-		Ok(course_request.try_into()?)
+		Ok(course_request)
 	}
 
 	async fn create_draft(
@@ -210,13 +217,13 @@ impl ICourseRepository for CourseRepository {
 			}
 		)?;
 
-		let users_courses_c = UsersCoursesForCreate {
+		let users_courses_c = UsersCoursesRequest {
     		user_id: ctx.user_id(),
     		course_id: course_id,
     		user_role: UserCourseRoleRequest::Creator,
 		};
 
-		UsersCoursesController::create(&dbm, users_courses_c).await?;
+		UsersCoursesRepository::create(&dbm, users_courses_c).await?;
 
 		dbm.dbx().commit_txn().await?;
 
@@ -282,18 +289,54 @@ impl ICourseRepository for CourseRepository {
 		Ok(())
 	}
 
+	async fn get_user_course(&self, _: &Ctx, user_id: i64, course_id: i64) -> CourseResult<UserCourse> {
+		let user_course_req = UsersCoursesRepository::get(&self.dbm, user_id, course_id).await?;
+
+		Ok(user_course_req.into())
+	}
+
+	async fn get_user_course_optional(
+		&self,
+		_:
+		&Ctx,
+		user_id: i64, 
+		course_id: i64
+	) -> CourseResult<Option<UserCourse>> {
+		let user_course_req = UsersCoursesRepository::get_optional(&self.dbm, user_id, course_id).await?;
+
+		Ok(user_course_req.and_then(|user_course| Some(user_course.into())))
+	}
+
 	async fn create_user_course(
 		&self,
 		_: &Ctx,
 		users_courses_c: UserCourse,
 	) -> CourseResult<()> {
-		let user_course_req = UsersCoursesForCreate { 
+		let user_course_req = UsersCoursesRequest { 
 			user_id: users_courses_c.user_id, 
 			course_id: users_courses_c.course_id, 
 			user_role: users_courses_c.user_role.into(),
 		};
 
-		UsersCoursesController::create(&self.dbm, user_course_req)
+		UsersCoursesRepository::create(&self.dbm, user_course_req)
+			.await
+			.map_err(|db_err| Box::new(db_err))?;
+
+		Ok(())
+	}
+
+	async fn delete_user_course(
+		&self,
+		_: &Ctx,
+		user_id: i64,
+		course_id: i64,
+	) -> CourseResult<()> {
+		let user_course_req = UsersCoursesForDelete { 
+			user_id,
+			course_id,
+		};
+
+		UsersCoursesRepository::delete(&self.dbm, user_course_req)
 			.await
 			.map_err(|db_err| Box::new(db_err))?;
 

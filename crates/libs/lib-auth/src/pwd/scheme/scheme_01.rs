@@ -1,4 +1,4 @@
-use super::{Error, Result};
+use super::{PwdSchemeError, Result};
 use crate::auth_config;
 use crate::pwd::scheme::Scheme;
 use crate::pwd::ContentToHash;
@@ -19,7 +19,7 @@ impl Scheme for Scheme01 {
 		if raw_pwd_new == raw_pwd_ref {
 			Ok(())
 		} else {
-			Err(Error::PwdValidate)
+			Err(PwdSchemeError::PwdValidate)
 		}
 	}
 }
@@ -29,7 +29,7 @@ fn hash(key: &[u8], to_hash: &ContentToHash) -> Result<String> {
 
 	// -- Create a HMAC-SHA-512 from key.
 	let mut hmac_sha512 =
-		Hmac::<Sha512>::new_from_slice(key).map_err(|_| Error::Key)?;
+		Hmac::<Sha512>::new_from_slice(key).map_err(|_| PwdSchemeError::Key)?;
 
 	// -- Add content.
 	hmac_sha512.update(content.as_bytes());

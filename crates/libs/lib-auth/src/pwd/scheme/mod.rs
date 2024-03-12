@@ -4,7 +4,7 @@ mod error;
 mod scheme_01;
 mod scheme_02;
 
-pub use self::error::{Error, Result};
+pub use self::error::{PwdSchemeError, Result};
 
 use crate::pwd::ContentToHash;
 use enum_dispatch::enum_dispatch;
@@ -36,6 +36,6 @@ pub fn get_scheme(scheme_name: &str) -> Result<impl Scheme> {
 	match scheme_name {
 		"01" => Ok(SchemeDispatcher::Scheme01(scheme_01::Scheme01)),
 		"02" => Ok(SchemeDispatcher::Scheme02(scheme_02::Scheme02)),
-		_ => Err(Error::SchemeNotFound(scheme_name.to_string())),
+		_ => Err(PwdSchemeError::SchemeNotFound(scheme_name.to_string())),
 	}
 }

@@ -19,7 +19,7 @@
 mod error;
 mod scheme;
 
-pub use self::error::{Error, Result};
+pub use self::error::{PwdError, Result};
 pub use scheme::SchemeStatus;
 
 use crate::pwd::scheme::{get_scheme, Scheme, DEFAULT_SCHEME};
@@ -50,7 +50,7 @@ pub struct ContentToHash {
 pub async fn hash_pwd(to_hash: ContentToHash) -> Result<String> {
 	tokio::task::spawn_blocking(move || hash_for_scheme(DEFAULT_SCHEME, to_hash))
 		.await
-		.map_err(|_| Error::FailSpawnBlockForHash)?
+		.map_err(|_| PwdError::FailSpawnBlockForHash)?
 }
 
 /// Validate if an ContentToHash matches.
@@ -76,7 +76,7 @@ pub async fn validate_pwd(
 		validate_for_scheme(&scheme_name, to_hash, hashed)
 	})
 	.await
-	.map_err(|_| Error::FailSpawnBlockForValidate)??;
+	.map_err(|_| PwdError::FailSpawnBlockForValidate)??;
 
 	// validate_for_scheme(&scheme_name, to_hash, &hashed).await?;
 	Ok(scheme_status)
@@ -108,7 +108,7 @@ struct PwdParts {
 }
 
 impl FromStr for PwdParts {
-	type Err = Error;
+	type Err = PwdError;
 
 	fn from_str(pwd_with_scheme: &str) -> Result<Self> {
 		regex_captures!(
@@ -119,7 +119,7 @@ impl FromStr for PwdParts {
 			scheme_name: scheme.to_string(),
 			hashed: hashed.to_string(),
 		})
-		.ok_or(Error::PwdWithSchemeFailedParse)
+		.ok_or(PwdError::PwdWithSchemeFailedParse)
 	}
 }
 

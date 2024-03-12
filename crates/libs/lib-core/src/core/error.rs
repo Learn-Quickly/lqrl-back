@@ -1,6 +1,19 @@
-#[derive(Debug)]
+use derive_more::From;
+use serde::Serialize;
+use serde_with::{serde_as, DisplayFromStr};
+
+#[serde_as]
+#[derive(Debug, Serialize, From)]
 pub enum CoreError {
+	// Course error
     CourseMustBePublishedError,
+	PermissionDenied,
+	CreatorCannotSubscribeToTheCourse,
+	CannotRegisterForCourseTwice,
+
+	// File error
+	#[from]
+	IOError(#[serde_as(as = "DisplayFromStr")] std::io::Error),
 }
 
 impl core::fmt::Display for CoreError {

@@ -1,3 +1,6 @@
+use typed_builder::TypedBuilder;
+
+#[derive(Clone)]
 pub struct Course {
     pub id: i64,
     pub title: String,
@@ -10,7 +13,7 @@ pub struct Course {
     pub state: CourseState,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum CourseState {
     Draft,
     Published,
@@ -26,12 +29,19 @@ pub struct CourseForCreate {
 	pub color: String,
 }
 
+#[derive(TypedBuilder)]
 pub struct CourseForUpdate {
+	#[builder(default, setter(strip_option))]
 	pub title: Option<String>,
+	#[builder(default, setter(strip_option))]
 	pub description: Option<String>,
+	#[builder(default, setter(strip_option))]
 	pub course_type: Option<String>,
+	#[builder(default, setter(strip_option))]
 	pub price: Option<f64>,
+	#[builder(default, setter(strip_option))]
 	pub color: Option<String>,
+	#[builder(default, setter(strip_option))]
 	pub img_url: Option<String>,
 }
 
@@ -41,6 +51,7 @@ pub struct UserCourse {
     pub user_role: UserCourseRole,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum UserCourseRole {
     Student,
     Creator,

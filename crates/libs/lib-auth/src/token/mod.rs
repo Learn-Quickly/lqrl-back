@@ -2,7 +2,7 @@
 
 mod error;
 
-pub use self::error::{Error, Result};
+pub use self::error::{TokenError, Result};
 
 use crate::config::auth_config;
 use hmac::{Hmac, Mac};
@@ -32,21 +32,21 @@ pub enum TokenType {
 }
 
 impl FromStr for Token {
-	type Err = Error;
+	type Err = TokenError;
 
 	fn from_str(token_str: &str) -> std::result::Result<Self, Self::Err> {
 		let splits: Vec<&str> = token_str.split('.').collect();
 		if splits.len() != 3 {
-			return Err(Error::InvalidFormat);
+			return Err(TokenError::InvalidFormat);
 		}
 		let (ident_b64u, exp_b64u, sign_b64u) = (splits[0], splits[1], splits[2]);
 
 		Ok(Self {
 			ident: b64u_decode_to_string(ident_b64u)
-				.map_err(|_| Error::CannotDecodeIdent)?,
+				.map_err(|_| TokenError::CannotDecodeIdent)?,
 
 			exp: b64u_decode_to_string(exp_b64u)
-				.map_err(|_| Error::CannotDecodeExp)?,
+				.map_err(|_| TokenError::CannotDecodeExp)?,
 
 			sign_b64u: sign_b64u.to_string(),
 		})
@@ -120,15 +120,15 @@ fn _validate_token_sign_and_exp(
 		_token_sign_into_b64u(&origin_token.ident, &origin_token.exp, salt, key)?;
 
 	if new_sign_b64u != origin_token.sign_b64u {
-		return Err(Error::SignatureNotMatching);
+		return Err(TokenError::SignatureNotMatching);
 	}
 
 	// -- Validate expiration.
-	let origin_exp = parse_utc(&origin_token.exp).map_err(|_| Error::ExpNotIso)?;
+	let origin_exp = parse_utc(&origin_token.exp).map_err(|_| TokenError::ExpNotIso)?;
 	let now = now_utc();
 
 	if origin_exp < now {
-		return Err(Error::Expired);
+		return Err(TokenError::Expired);
 	}
 
 	Ok(())
@@ -146,7 +146,7 @@ fn _token_sign_into_b64u(
 
 	// -- Create a HMAC-SHA-512 from key.
 	let mut hmac_sha512 = Hmac::<Sha512>::new_from_slice(key)
-		.map_err(|_| Error::HmacFailNewFromSlice)?;
+		.map_err(|_| TokenError::HmacFailNewFromSlice)?;
 
 	// -- Add content.
 	hmac_sha512.update(content.as_bytes());
@@ -248,7 +248,7 @@ mod tests {
 
 		// -- Check
 		assert!(
-			matches!(res, Err(token::Error::Expired)),
+			matches!(res, Err(token::TokenError::Expired)),
 			"Should have matched `Err(Error::Expired)` but was `{res:?}`"
 		);
 

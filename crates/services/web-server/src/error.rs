@@ -1,11 +1,16 @@
 use crate::web;
+use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
+use lib_auth::pwd::PwdError;
+use lib_auth::token::TokenError;
 use lib_auth::{pwd, token};
+use lib_core::core::error::CoreError;
 use lib_db::repository::DbError;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
+use std::error::Error;
 use std::sync::Arc;
 use tracing::debug;
 
@@ -24,47 +29,49 @@ pub enum AppError {
 		user_id: i64,
 	},
 
+	// -- Extractors
+	ReqStampNotInReqExt,
+
 	// -- CtxExtError
 	#[from]
 	CtxExt(web::mw_auth::CtxExtError),
 
-	// -- Extractors
-	ReqStampNotInReqExt,
-
 	// -- Modules
+	#[from]
+	Core(CoreError),
 	#[from]
 	Db(DbError),
 	#[from]
-	Pwd(pwd::Error),
+	Pwd(pwd::PwdError),
 	#[from]
-	Token(token::Error),
+	Token(token::TokenError),
 
 	// -- External Modules
 	#[from]
 	SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
 
+	#[from]
+	Multipart(#[serde_as(as = "DisplayFromStr")] MultipartError),
+
 	// -- File
 	CreateFileFail,
 	RemoveFileFail,
+
+	GenericError,
 }
 
-// region:    --- Axum IntoResponse
 impl IntoResponse for AppError {
 	fn into_response(self) -> Response {
 		debug!("{:<12} - model::Error {self:?}", "INTO_RES");
 
-		// Create a placeholder Axum reponse.
 		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
-		// Insert the Error into the reponse.
 		response.extensions_mut().insert(Arc::new(self));
 
 		response
 	}
 }
-// endregion: --- Axum IntoResponse
 
-// region:    --- Error Boilerplate
 impl core::fmt::Display for AppError {
 	fn fmt(
 		&self,
@@ -75,11 +82,50 @@ impl core::fmt::Display for AppError {
 }
 
 impl std::error::Error for AppError {}
-// endregion: --- Error Boilerplate
 
-// region:    --- Client Error
+macro_rules! impl_from_box {
+    ($from:ty, $to:ident) => {
+        impl From<Box<$from>> for AppError {
+            fn from(value: Box<$from>) -> Self {
+                AppError::$to(*value)
+            }
+        }
+    };
+}
 
-/// From the root error to the http status code and ClientError
+impl_from_box!(CoreError, Core);
+impl_from_box!(DbError, Db);
+impl_from_box!(PwdError, Pwd);
+impl_from_box!(TokenError, Token);
+impl_from_box!(serde_json::Error, SerdeJson);
+impl_from_box!(web::mw_auth::CtxExtError, CtxExt);
+impl_from_box!(MultipartError, Multipart);
+
+macro_rules! try_downcast_error {
+    ($error:expr, $($type:ty),*) => {
+        $( if let Ok(err) = $error.downcast::<$type>() {
+            return err.into();
+        } )*
+    };
+}
+
+impl From<Box<dyn Error>> for AppError {
+	fn from(error: Box<dyn Error>) -> Self {
+		try_downcast_error!(
+			error,
+			CoreError,
+			DbError,
+			PwdError,
+			TokenError,
+			serde_json::Error,
+			web::mw_auth::CtxExtError,
+			MultipartError
+		);
+
+		AppError::GenericError
+	}
+}
+
 impl AppError {
 	pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
 		use AppError::*;
@@ -104,7 +150,9 @@ impl AppError {
 			// -- Fallback.
 			_ => (
 				StatusCode::INTERNAL_SERVER_ERROR,
-				ClientError::SERVICE_ERROR,
+				ClientError::SERVICE_ERROR {
+					description: self.to_string()
+				},
 			),
 		}
 	}
@@ -118,6 +166,5 @@ pub enum ClientError {
 	NO_AUTH,
 	ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
 
-	SERVICE_ERROR,
+	SERVICE_ERROR { description: String },
 }
-// endregion: --- Client Error

@@ -49,9 +49,9 @@ pub enum DbError {
 
 	// -- Modules
 	#[from]
-	Pwd(pwd::Error),
+	Pwd(pwd::PwdError),
 	#[from]
-	Dbx(dbx::Error),
+	Dbx(dbx::StoreError),
 
 	// -- Externals
 	#[from]
@@ -89,7 +89,7 @@ impl DbError {
 	/// if this Error is an SQLX Error that contains a database error.
 	pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
 		match self {
-			DbError::Dbx(dbx::Error::Sqlx(sqlx_error)) => {
+			DbError::Dbx(dbx::StoreError::Sqlx(sqlx_error)) => {
 				sqlx_error.as_database_error()
 			}
 			_ => None,
