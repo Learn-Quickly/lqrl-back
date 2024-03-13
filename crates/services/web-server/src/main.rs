@@ -6,6 +6,7 @@ mod web;
 mod error;
 
 use config::web_config;
+use lib_db::store::DbManager;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use utoipa::openapi::security::Http;
@@ -17,7 +18,6 @@ use crate::web::mw_res_map::mw_reponse_map;
 use crate::web::{routes_login, routes_register, routes_static, routes_course};
 use axum::{middleware, Router};
 use lib_db::_dev_utils;
-use lib_db::repository::DbManager;
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::EnvFilter;

@@ -1,10 +1,9 @@
-use crate::repository::base::{
+use crate::base::{
 	prep_fields_for_create, prep_fields_for_update, CommonIden, DbRepository,
 	LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX,
 };
-use crate::repository::error::DbError;
-use crate::repository::DbManager;
-use crate::repository::Result;
+use crate::store::error::{DbError, DbResult};
+use crate::store::DbManager;
 use lib_core::ctx::Ctx;
 use modql::field::HasFields;
 use modql::filter::{FilterGroups, ListOptions};
@@ -13,7 +12,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 
-pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> Result<i64>
+pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> DbResult<i64>
 where
 	MC: DbRepository,
 	E: HasFields,
@@ -43,7 +42,7 @@ where
 	Ok(id)
 }
 
-pub async fn get<MC, E>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<E>
+pub async fn get<MC, E>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<E>
 where
 	MC: DbRepository,
 	E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
@@ -76,7 +75,7 @@ pub async fn list<MC, E, F>(
 	dbm: &DbManager,
 	filter: Option<F>,
 	list_options: Option<ListOptions>,
-) -> Result<Vec<E>>
+) -> DbResult<Vec<E>>
 where
 	MC: DbRepository,
 	F: Into<FilterGroups>,
@@ -111,7 +110,7 @@ pub async fn update<MC, E>(
 	dbm: &DbManager,
 	id: i64,
 	data: E,
-) -> Result<()>
+) -> DbResult<()>
 where
 	MC: DbRepository,
 	E: HasFields,
@@ -144,7 +143,7 @@ where
 	}
 }
 
-pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<()>
+pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<()>
 where
 	MC: DbRepository,
 {
@@ -172,7 +171,7 @@ where
 
 pub fn compute_list_options(
 	list_options: Option<ListOptions>,
-) -> Result<ListOptions> {
+) -> DbResult<ListOptions> {
 	if let Some(mut list_options) = list_options {
 		// Validate the limit.
 		if let Some(limit) = list_options.limit {

@@ -1,16 +1,16 @@
 // region:    --- Modules
+pub(crate) mod error;
 
-mod error;
-
-pub use error::{StoreError, Result};
-
-use crate::repository::store::Db;
 use sqlx::postgres::any::AnyConnectionBackend;
 use sqlx::query::{Query, QueryAs};
 use sqlx::{FromRow, IntoArguments, Pool, Postgres, Transaction};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+use self::error::{DbxResult, StoreError};
+
+use super::Db;
 
 // endregion: --- Modules
 
@@ -22,7 +22,7 @@ pub struct Dbx {
 }
 
 impl Dbx {
-	pub fn new(db_pool: Db, with_txn: bool) -> Result<Self> {
+	pub fn new(db_pool: Db, with_txn: bool) -> DbxResult<Self> {
 		Ok(Dbx {
 			db_pool,
 			txn_holder: Arc::default(),
@@ -67,7 +67,7 @@ impl DerefMut for TxnHolder {
 }
 
 impl Dbx {
-	pub async fn begin_txn(&self) -> Result<()> {
+	pub async fn begin_txn(&self) -> DbxResult<()> {
 		if !self.with_txn {
 			return Err(StoreError::CannotBeginTxnWithTxnFalse);
 		}
@@ -86,7 +86,7 @@ impl Dbx {
 		Ok(())
 	}
 
-	pub async fn commit_txn(&self) -> Result<()> {
+	pub async fn commit_txn(&self) -> DbxResult<()> {
 		if !self.with_txn {
 			return Err(StoreError::CannotCommitTxnWithTxnFalse);
 		}
@@ -118,7 +118,7 @@ impl Dbx {
 	pub async fn fetch_one<'q, O, A>(
 		&self,
 		query: QueryAs<'q, Postgres, O, A>,
-	) -> Result<O>
+	) -> DbxResult<O>
 	where
 		O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
 		A: IntoArguments<'q, Postgres> + 'q,
@@ -140,7 +140,7 @@ impl Dbx {
 	pub async fn fetch_optional<'q, O, A>(
 		&self,
 		query: QueryAs<'q, Postgres, O, A>,
-	) -> Result<Option<O>>
+	) -> DbxResult<Option<O>>
 	where
 		O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
 		A: IntoArguments<'q, Postgres> + 'q,
@@ -162,7 +162,7 @@ impl Dbx {
 	pub async fn fetch_all<'q, O, A>(
 		&self,
 		query: QueryAs<'q, Postgres, O, A>,
-	) -> Result<Vec<O>>
+	) -> DbxResult<Vec<O>>
 	where
 		O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
 		A: IntoArguments<'q, Postgres> + 'q,
@@ -181,7 +181,7 @@ impl Dbx {
 		Ok(data)
 	}
 
-	pub async fn execute<'q, A>(&self, query: Query<'q, Postgres, A>) -> Result<u64>
+	pub async fn execute<'q, A>(&self, query: Query<'q, Postgres, A>) -> DbxResult<u64>
 	where
 		A: IntoArguments<'q, Postgres> + 'q,
 	{

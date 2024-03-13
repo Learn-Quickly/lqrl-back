@@ -9,8 +9,8 @@ use axum_auth::AuthBearer;
 use derive_more::Display;
 use lib_auth::token::{validate_web_token, Token};
 use lib_core::ctx::Ctx;
-use lib_db::repository::user::{UserBmc, UserForAuth};
-use lib_db::repository::DbManager;
+use lib_db::command_repository::user::{UserBmc, UserForAuth};
+use lib_db::store::DbManager;
 use serde::Serialize;
 use tracing::debug;
 

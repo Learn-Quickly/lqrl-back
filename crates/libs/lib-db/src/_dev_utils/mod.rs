@@ -2,11 +2,12 @@
 
 mod dev_db;
 
-use crate::repository::{self, DbManager};
 use lib_core::ctx::Ctx;
 use modql::filter::OpValString;
 use tokio::sync::OnceCell;
 use tracing::info;
+
+use crate::{command_repository, store::{error::DbResult, DbManager}};
 
 // endregion: --- Modules
 
@@ -44,7 +45,7 @@ pub async fn seed_users(
 	ctx: &Ctx,
 	dbm: &DbManager,
 	usernames: &[&str],
-) -> repository::Result<Vec<i64>> {
+) -> DbResult<Vec<i64>> {
 	let mut ids = Vec::new();
 
 	for name in usernames {
@@ -59,13 +60,13 @@ pub async fn seed_user(
 	ctx: &Ctx,
 	dbm: &DbManager,
 	username: &str,
-) -> repository::Result<i64> {
+) -> DbResult<i64> {
 	let pwd_clear = "seed-user-pwd";
 
-	let id = repository::user::UserBmc::create(
+	let id = command_repository::user::UserBmc::create(
 		ctx,
 		dbm,
-		repository::user::UserForCreate {
+		command_repository::user::UserForCreate {
 			username: username.to_string(),
 			pwd_clear: pwd_clear.to_string(),
 		},
@@ -79,11 +80,11 @@ pub async fn clean_users(
 	ctx: &Ctx,
 	dbm: &DbManager,
 	contains_username: &str,
-) -> repository::Result<usize> {
-	let users = repository::user::UserBmc::list(
+) -> DbResult<usize> {
+	let users = command_repository::user::UserBmc::list(
 		ctx,
 		dbm,
-		Some(vec![repository::user::UserFilter {
+		Some(vec![command_repository::user::UserFilter {
 			username: Some(
 				OpValString::Contains(contains_username.to_string()).into(),
 			),
@@ -95,7 +96,7 @@ pub async fn clean_users(
 	let count = users.len();
 
 	for user in users {
-		repository::user::UserBmc::delete(ctx, dbm, user.id).await?;
+		command_repository::user::UserBmc::delete(ctx, dbm, user.id).await?;
 	}
 
 	Ok(count)

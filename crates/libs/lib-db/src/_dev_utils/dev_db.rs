@@ -1,11 +1,12 @@
-use crate::repository::user::{User, UserBmc};
-use crate::repository::DbManager;
 use lib_core::ctx::Ctx;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
+
+use crate::command_repository::user::{User, UserBmc};
+use crate::store::DbManager;
 
 type Db = Pool<Postgres>;
 

@@ -1,4 +1,4 @@
-use crate::repository::base::{CommonIden, DbRepository, TimestampIden};
+use crate::base::{CommonIden, DbRepository, TimestampIden};
 use lib_utils::time::now_utc;
 use modql::field::{Field, Fields};
 use sea_query::IntoIden;

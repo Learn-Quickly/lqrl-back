@@ -1,14 +1,44 @@
 // region:    --- Modules
 
-pub(in crate::repository) mod dbx;
+pub(crate) mod dbx;
+pub mod error;
 
-use crate::core_config;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
+
+use crate::config::core_config;
+
+use self::dbx::Dbx;
+use self::error::{DbError, DbResult};
 
 // endregion: --- Modules
 
 pub type Db = Pool<Postgres>;
+
+#[derive(Clone)]
+pub struct DbManager {
+	dbx: Dbx,
+}
+
+impl DbManager {
+	/// Constructor
+	pub async fn new() -> DbResult<Self> {
+		let db_pool = new_db_pool()
+			.await
+			.map_err(|ex| DbError::CantCreateDbManagerProvider(ex.to_string()))?;
+		let dbx = Dbx::new(db_pool, false)?;
+		Ok(DbManager { dbx })
+	}
+
+	pub fn new_with_txn(&self) -> DbResult<Self> {
+		let dbx = Dbx::new(self.dbx.db().clone(), true)?;
+		Ok(DbManager { dbx })
+	}
+
+	pub fn dbx(&self) -> &Dbx {
+		&self.dbx
+	}
+}
 
 pub async fn new_db_pool() -> sqlx::Result<Db> {
 	// * See NOTE 1) below

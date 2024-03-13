@@ -12,13 +12,13 @@ use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 use time::OffsetDateTime;
 use typed_builder::TypedBuilder;
-use crate::repository::modql_utils::time_to_sea_value;
+use crate::base::{self, DbRepository};
+use crate::command_repository::modql_utils::time_to_sea_value;
+use crate::store::error::DbError;
+use crate::store::DbManager;
 use lib_utils::time::Rfc3339;
 
-use super::base::{self, DbRepository};
-use super::error::DbError;
 use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesRepository, UsersCoursesRequest};
-use super::DbManager;
 
 #[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize, TypedBuilder)]

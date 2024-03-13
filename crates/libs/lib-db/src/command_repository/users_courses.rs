@@ -5,9 +5,7 @@ use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use crate::repository::Result;
-
-use super::{base::DbRepository, error::DbError, DbManager};
+use crate::{base::DbRepository, store::{error::{DbError, DbResult}, DbManager}};
 
 #[derive(Iden)]
 pub enum UserCourseIden {
@@ -83,7 +81,7 @@ impl UsersCoursesRepository {
     pub async fn create(
         dbm: &DbManager,
         users_courses_c: UsersCoursesRequest,
-    ) -> Result<()> {
+    ) -> DbResult<()> {
 	    let fields = users_courses_c.not_none_fields();
 
 	    let (columns, sea_values) = fields.for_sea_insert();
@@ -106,7 +104,7 @@ impl UsersCoursesRepository {
 		dbm: &DbManager,
 		user_id: i64,
 		course_id: i64,
-	) -> Result<UsersCoursesRequest> {
+	) -> DbResult<UsersCoursesRequest> {
 		let mut query = Query::select();
 		query
 			.from(Self::table_ref())
@@ -133,7 +131,7 @@ impl UsersCoursesRepository {
 		dbm: &DbManager, 
 		user_id: i64, 
 		course_id: i64
-	) -> Result<Option<UsersCoursesRequest>> {
+	) -> DbResult<Option<UsersCoursesRequest>> {
 		let mut query = Query::select();
 		query
 			.from(Self::table_ref())
@@ -154,7 +152,7 @@ impl UsersCoursesRepository {
 	pub async fn delete(
 		dbm: &DbManager,
 		users_courses_d: UsersCoursesForDelete,
-	) -> Result<()> {
+	) -> DbResult<()> {
 		// -- Build query
 		let mut query = Query::delete();
 		query

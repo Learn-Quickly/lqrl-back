@@ -1,4 +1,4 @@
-use crate::repository::store::dbx;
+use crate::store::dbx;
 use derive_more::From;
 use lib_auth::pwd;
 use serde::Serialize;
@@ -6,7 +6,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use sqlx::error::DatabaseError;
 use std::borrow::Cow;
 
-pub type Result<T> = core::result::Result<T, DbError>;
+pub type DbResult<T> = core::result::Result<T, DbError>;
 
 #[serde_as]
 #[derive(Debug, Serialize, From)]
@@ -51,7 +51,7 @@ pub enum DbError {
 	#[from]
 	Pwd(pwd::PwdError),
 	#[from]
-	Dbx(dbx::StoreError),
+	Dbx(dbx::error::StoreError),
 
 	// -- Externals
 	#[from]
@@ -89,14 +89,14 @@ impl DbError {
 	/// if this Error is an SQLX Error that contains a database error.
 	pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
 		match self {
-			DbError::Dbx(dbx::StoreError::Sqlx(sqlx_error)) => {
+			DbError::Dbx(dbx::error::StoreError::Sqlx(sqlx_error)) => {
 				sqlx_error.as_database_error()
 			}
 			_ => None,
 		}
 	}
 
-	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> Result<T> {
+	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> DbResult<T> {
 		let result = value.unwrap_or(
 			Err(DbError::MissingFieldError { 
 				entity: entity.clone(),

@@ -1,6 +1,6 @@
 use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
 use lib_core::{core::course::CourseController, interfaces::course::ICourseRepository, model::course::{Course, CourseForCreate, CourseState}};
-use lib_db::repository::{course::CourseRepository, DbManager};
+use lib_db::{command_repository::course::CourseRepository, store::DbManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
@@ -64,8 +64,9 @@ async fn api_create_course_draft(
     	color: paylod.color,
 	};
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
+
 	let course_id = course_controller.create_draft(course_c).await?;
 
 	let created_course_draft = CreatedCourseDraft {
@@ -100,8 +101,8 @@ async fn api_publish_course(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
 	course_controller.publish_course(course_id.course_id).await?;
 
 	let body = Json(json!({
@@ -131,8 +132,9 @@ async fn api_archive_course(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
+
 	course_controller.archive_course(course_id.course_id).await?;
 
 	let body = Json(json!({
@@ -296,8 +298,8 @@ async fn api_set_course_img_handler(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
 
     while let Some(field) = multipart.next_field().await? {
         let field_name = if let Some(field_name) = field.name() {
@@ -348,8 +350,8 @@ async fn api_register_for_course(
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
 
 	course_controller.register_for_course(course_id).await?;
 
@@ -381,8 +383,8 @@ async fn api_unsubscribe_from_course(
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = Box::new(CourseRepository::new(dbm));
-	let course_controller = CourseController::new(ctx, repository);
+	let repository = CourseRepository::new(dbm);
+	let course_controller = CourseController::new(&ctx, &repository);
 
 	course_controller.unsubscribe_from_course(course_id).await?;
 

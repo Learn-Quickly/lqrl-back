@@ -7,7 +7,7 @@ use lib_auth::pwd::PwdError;
 use lib_auth::token::TokenError;
 use lib_auth::{pwd, token};
 use lib_core::core::error::CoreError;
-use lib_db::repository::DbError;
+use lib_db::store::error::DbError;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use std::error::Error;
@@ -146,6 +146,14 @@ impl AppError {
 				StatusCode::BAD_REQUEST,
 				ClientError::ENTITY_NOT_FOUND { entity, id: *id },
 			),
+			Db(DbError::UserCourseNotFound{ entity, course_id, user_id}) => (
+				StatusCode::BAD_REQUEST,
+				ClientError::USER_COURSE_NOT_FOUND { 
+					entity, 
+					course_id: *course_id, 
+					user_id: *user_id 
+				},
+			),
 
 			// -- Fallback.
 			_ => (
@@ -165,6 +173,11 @@ pub enum ClientError {
 	LOGIN_FAIL,
 	NO_AUTH,
 	ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
+	USER_COURSE_NOT_FOUND { 
+		entity: &'static str, 
+		course_id: i64, 
+		user_id: i64 
+	},
 
 	SERVICE_ERROR { description: String },
 }

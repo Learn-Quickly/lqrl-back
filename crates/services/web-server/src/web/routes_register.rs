@@ -1,6 +1,6 @@
 use axum::{extract::State, routing::post, Json, Router};
 use lib_core::ctx::Ctx;
-use lib_db::repository::{user::{UserBmc, UserForCreate}, DbManager};
+use lib_db::{command_repository::user::{UserBmc, UserForCreate}, store::DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use utoipa::ToSchema;

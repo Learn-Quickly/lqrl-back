@@ -1,7 +1,7 @@
-use crate::repository::base::{self, prep_fields_for_update, DbRepository};
-use crate::repository::modql_utils::time_to_sea_value;
-use crate::repository::DbManager;
-use crate::repository::Result;
+use crate::base::{self, prep_fields_for_update, DbRepository};
+use crate::command_repository::modql_utils::time_to_sea_value;
+use crate::store::error::{DbError, DbResult};
+use crate::store::DbManager;
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::ctx::Ctx;
 use modql::field::{Field, Fields, HasFields};
@@ -14,8 +14,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 use uuid::Uuid;
-
-use super::error::DbError;
 
 #[derive(Clone, Fields, FromRow, Debug, Serialize)]
 pub struct User {
@@ -100,7 +98,7 @@ impl UserBmc {
 		ctx: &Ctx,
 		dbm: &DbManager,
 		user_c: UserForCreate,
-	) -> Result<i64> {
+	) -> DbResult<i64> {
 		let UserForCreate {
 			username,
 			pwd_clear,
@@ -140,7 +138,7 @@ impl UserBmc {
 		Ok(user_id)
 	}
 
-	pub async fn get<E>(ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<E>
+	pub async fn get<E>(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<E>
 	where
 		E: UserBy,
 	{
@@ -151,7 +149,7 @@ impl UserBmc {
 		_ctx: &Ctx,
 		dbm: &DbManager,
 		username: &str,
-	) -> Result<Option<E>>
+	) -> DbResult<Option<E>>
 	where
 		E: UserBy,
 	{
@@ -176,7 +174,7 @@ impl UserBmc {
 		dbm: &DbManager,
 		filter: Option<Vec<UserFilter>>,
 		list_options: Option<ListOptions>,
-	) -> Result<Vec<User>> {
+	) -> DbResult<Vec<User>> {
 		base::list::<Self, _, _>(ctx, dbm, filter, list_options).await
 	}
 
@@ -185,7 +183,7 @@ impl UserBmc {
 		dbm: &DbManager,
 		id: i64,
 		pwd_clear: &str,
-	) -> Result<()> {
+	) -> DbResult<()> {
 		// -- Prep password
 		let user: UserForLogin = Self::get(ctx, dbm, id).await?;
 		let pwd = pwd::hash_pwd(ContentToHash {
@@ -221,7 +219,7 @@ impl UserBmc {
 	///       - The automatically set `mid`/`mtime` will record who performed the deletion.
 	///       - It's likely necessary to record this action in a `um_change_log` (a user management change audit table).
 	///       - Remove or clean up any user-specific assets (messages, etc.).
-	pub async fn delete(ctx: &Ctx, dbm: &DbManager, id: i64) -> Result<()> {
+	pub async fn delete(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<()> {
 		base::delete::<Self>(ctx, dbm, id).await
 	}
 }

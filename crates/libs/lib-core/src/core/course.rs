@@ -2,13 +2,13 @@ use crate::{ctx::Ctx, interfaces::course::{ICourseRepository, CourseResult}, mod
 
 use super::{error::CoreError, img_file::{remove_file, upload_file}};
 
-pub struct CourseController {
-    ctx: Ctx,
-    repository: Box<dyn ICourseRepository + Send + Sync>,
+pub struct CourseController<'a> {
+    ctx: &'a Ctx,
+    repository: &'a (dyn ICourseRepository + Send + Sync),
 }
 
-impl CourseController {
-    pub fn new(ctx: Ctx, repository: Box<dyn ICourseRepository + Send + Sync>) -> Self {
+impl<'a> CourseController<'a> {
+    pub fn new(ctx: &'a Ctx, repository: &'a (impl ICourseRepository + Send + Sync)) -> Self {
         Self {
             ctx,
             repository,
@@ -16,7 +16,7 @@ impl CourseController {
     }
 }
 
-impl CourseController {
+impl<'a> CourseController<'a> {
     pub async fn create_draft(
         &self,
         course_c: CourseForCreate,
