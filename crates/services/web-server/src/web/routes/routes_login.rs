@@ -13,8 +13,7 @@ use tracing::debug;
 use utoipa::ToSchema;
 
 use crate::error::{AppError, AppResult};
-
-use super::mw_auth::CtxExtError;
+use crate::web::middleware::mw_auth::CtxExtError;
 
 pub fn routes(dbm: DbManager) -> Router {
 	Router::new()

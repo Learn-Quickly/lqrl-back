@@ -6,9 +6,7 @@ use serde_json::{json, Value};
 use serde_with::serde_as;
 use utoipa::ToSchema;
 
-use crate::error::AppResult;
-
-use super::mw_auth::CtxW;
+use crate::{error::AppResult, web::middleware::mw_auth::CtxW};
 
 pub fn routes(dbm: DbManager) -> Router {
 	Router::new()

@@ -34,7 +34,7 @@ pub enum AppError {
 
 	// -- CtxExtError
 	#[from]
-	CtxExt(web::mw_auth::CtxExtError),
+	CtxExt(web::middleware::mw_auth::CtxExtError),
 
 	// -- Modules
 	#[from]
@@ -118,7 +118,7 @@ impl From<Box<dyn Error>> for AppError {
 			PwdError,
 			TokenError,
 			serde_json::Error,
-			web::mw_auth::CtxExtError,
+			web::middleware::mw_auth::CtxExtError,
 			MultipartError
 		);
 

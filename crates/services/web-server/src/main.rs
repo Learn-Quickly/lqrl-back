@@ -12,10 +12,10 @@ use tower_http::services::ServeDir;
 use utoipa::openapi::security::Http;
 use error::AppResult;
 
-use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolver};
-use crate::web::mw_req_stamp::mw_req_stamp_resolver;
-use crate::web::mw_res_map::mw_reponse_map;
-use crate::web::{routes_login, routes_register, routes_static, routes_course};
+use crate::web::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
+use crate::web::middleware::mw_req_stamp::mw_req_stamp_resolver;
+use crate::web::middleware::mw_res_map::mw_reponse_map;
+use crate::web::routes::{routes_login, routes_register, routes_static, routes_course};
 use axum::{middleware, Router};
 use lib_db::_dev_utils;
 use tokio::net::TcpListener;
@@ -96,7 +96,7 @@ async fn main() -> AppResult<()> {
 
 	let dbm = DbManager::new().await?;
 
-	let routes_course = web::routes_course::routes(dbm.clone())
+	let routes_course = web::routes::routes_course::routes(dbm.clone())
 		.route_layer(middleware::from_fn(mw_ctx_require));
 
 	let cors = CorsLayer::new()
