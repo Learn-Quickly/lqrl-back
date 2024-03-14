@@ -86,13 +86,12 @@ impl From<DbxError> for DbError {
 
 impl DbError {
 	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> DbResult<T> {
-		let result = value.unwrap_or(
-			Err(DbError::MissingFieldError { 
+		match value {
+			Some(value) => Ok(value),
+			None => Err(DbError::MissingFieldError { 
 				entity: entity.clone(),
 				field,
-			})?
-		);
-
-		Ok(result)
+			})?,
+		}
 	}
 }
