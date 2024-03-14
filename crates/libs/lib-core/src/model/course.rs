@@ -30,7 +30,7 @@ pub struct CourseForCreate {
 }
 
 #[derive(TypedBuilder)]
-pub struct CourseForUpdate {
+pub struct CourseForUpdateCommand {
 	#[builder(default, setter(strip_option))]
 	pub title: Option<String>,
 	#[builder(default, setter(strip_option))]
@@ -42,6 +42,19 @@ pub struct CourseForUpdate {
 	#[builder(default, setter(strip_option))]
 	pub color: Option<String>,
 	#[builder(default, setter(strip_option))]
+	pub img_url: Option<String>,
+	#[builder(default, setter(strip_option))]
+	pub published_date: Option<i64>,
+	#[builder(default, setter(strip_option))]
+	pub state: Option<CourseState>,
+}
+
+pub struct CourseForUpdate {
+	pub title: Option<String>,
+	pub description: Option<String>,
+	pub course_type: Option<String>,
+	pub price: Option<f64>,
+	pub color: Option<String>,
 	pub img_url: Option<String>,
 }
 

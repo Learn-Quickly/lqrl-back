@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{core::error::CoreError, ctx::Ctx, model::course::{Course, CourseForCreate, CourseForUpdate, UserCourse}};
+use crate::{core::error::CoreError, ctx::Ctx, model::course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse}};
 
 pub type CourseResult<T> = core::result::Result<T, CoreError>;
 
@@ -10,11 +10,7 @@ pub trait ICourseRepository {
 
     async fn create_draft(&self, ctx: &Ctx, course_c: CourseForCreate) -> CourseResult<i64>;
 
-    async fn update_course(&self, ctx: &Ctx, course_for_u: CourseForUpdate, course_id: i64) -> CourseResult<()>;
-
-    async fn publish_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<()>;
-
-    async fn archive_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<()>;
+    async fn update_course(&self, ctx: &Ctx, course_for_u: CourseForUpdateCommand, course_id: i64) -> CourseResult<()>;
 
     async fn create_user_course(&self, ctx: &Ctx, course_for_r: UserCourse) -> CourseResult<()>;
 

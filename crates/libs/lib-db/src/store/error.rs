@@ -51,6 +51,9 @@ pub enum DbError {
 	#[from]
 	Pwd(pwd::PwdError),
 
+	#[from]
+	DateError(lib_utils::time::DateError),
+
 	Dbx(String),
 }
 

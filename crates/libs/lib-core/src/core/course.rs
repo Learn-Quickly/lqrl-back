@@ -1,4 +1,4 @@
-use crate::{ctx::Ctx, interfaces::course::{ICourseRepository, CourseResult}, model::course::{CourseForCreate, CourseForUpdate, UserCourse}};
+use crate::{ctx::Ctx, interfaces::course::{CourseResult, ICourseRepository}, model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}};
 
 use super::{error::CoreError, img_file::{remove_file, upload_file}};
 
@@ -29,7 +29,18 @@ impl<'a> CourseController<'a> {
         course_for_u: CourseForUpdate,
         course_id: i64,
     ) -> CourseResult<()> {
-        self.repository.update_course(&self.ctx, course_for_u, course_id).await
+        let command = CourseForUpdateCommand {
+            title: course_for_u.title,
+            description: course_for_u.description,
+            course_type: course_for_u.course_type,
+            price: course_for_u.price,
+            color: course_for_u.color,
+            img_url: None,
+            published_date: None,
+            state: None,
+        };
+
+        self.repository.update_course(&self.ctx, command, course_id).await
     }
 
     pub async fn set_course_img(
@@ -46,7 +57,7 @@ impl<'a> CourseController<'a> {
 
         let new_img_url = upload_file(file_path, file_data).await?;
 
-        let course_for_u = CourseForUpdate::builder()
+        let course_for_u = CourseForUpdateCommand::builder()
             .img_url(new_img_url.clone())
             .build();
 
@@ -65,14 +76,22 @@ impl<'a> CourseController<'a> {
         &self, 
         course_id: i64,
     ) -> CourseResult<()> {
-        self.repository.publish_course(&self.ctx, course_id).await
+        let command = CourseForUpdateCommand::builder()
+            .state(crate::model::course::CourseState::Published)
+            .build();
+
+        self.repository.update_course(&self.ctx, command, course_id).await
     }
 
     pub async fn archive_course(
         &self,
         course_id: i64,
     ) -> CourseResult<()> {
-        self.repository.archive_course(&self.ctx, course_id).await
+        let command = CourseForUpdateCommand::builder()
+            .state(crate::model::course::CourseState::Archived)
+            .build();
+
+        self.repository.update_course(&self.ctx, command, course_id).await
     }
 
     pub async fn register_for_course(

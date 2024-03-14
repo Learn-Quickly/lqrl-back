@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use derive_more::Display;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::course::{ICourseRepository, CourseResult};
-use lib_core::model::course::{Course, CourseForCreate, CourseForUpdate, CourseState, UserCourse};
+use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, CourseState, UserCourse};
 use modql::field::{Fields, HasFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
 use sea_query::Nullable;
@@ -17,7 +17,7 @@ use crate::command_repository::modql_utils::time_to_sea_value;
 use crate::store::dbx::error::DbxError;
 use crate::store::error::DbError;
 use crate::store::DbManager;
-use lib_utils::time::Rfc3339;
+use lib_utils::time::{from_unix_timestamp, Rfc3339};
 
 use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesRepository, UsersCoursesRequest};
 
@@ -96,6 +96,17 @@ impl From<CourseStateRequest> for CourseState {
 			CourseStateRequest::Published => Self::Published,
 			CourseStateRequest::Archived => Self::Archived,
 			CourseStateRequest::None => Self::None,
+		}
+	}
+}
+
+impl From<CourseState> for CourseStateRequest {
+	fn from(value: CourseState) -> Self {
+		match value {
+			CourseState::Draft => CourseStateRequest::Draft,
+			CourseState::Published => CourseStateRequest::Published,
+			CourseState::Archived => CourseStateRequest::Archived,
+			CourseState::None => CourseStateRequest::None,
 		}
 	}
 }
@@ -234,56 +245,28 @@ impl ICourseRepository for CourseRepository {
 	async fn update_course(
 		&self, 
 		ctx: &Ctx,
-		course_for_u: CourseForUpdate,
+		course_for_u: CourseForUpdateCommand,
 		course_id: i64,
 	) -> CourseResult<()> {
+		let published_date = if let Some(seconds) = course_for_u.published_date {
+			Some(from_unix_timestamp(seconds).map_err(DbError::DateError)?)
+		} else {
+			None
+		};
+
 		let course_req_u = CourseRequest { 
+			id: None,
 			title: course_for_u.title, 
 			description: course_for_u.description, 
 			course_type: course_for_u.course_type, 
 			price: course_for_u.price, 
 			color: course_for_u.color, 
 			img_url: course_for_u.img_url, 
-			id: None,
-			published_date: None,
-			state: None,
+			published_date,
+			state: course_for_u.state.and_then(|state| Some(state.into())),
 		};
 
 		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_u)
-			.await
-			.map_err(Into::<DbError>::into)?;
-
-		Ok(())
-	}
-
-	async fn publish_course(
-		&self,
-		ctx: &Ctx,
-		course_id: i64,
-	) -> CourseResult<()> {
-		let now_utc = lib_utils::time::now_utc();
-		let course_req_publish = CourseRequest::builder()
-			.state(CourseStateRequest::Published)
-			.published_date(now_utc)
-			.build();
-
-		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_publish)
-			.await
-			.map_err(Into::<DbError>::into)?;
-
-		Ok(())
-	}
-
-	async fn archive_course(
-		&self,
-		ctx: &Ctx,
-		course_id: i64,
-	) -> CourseResult<()> {
-		let course_req_archive = CourseRequest::builder()
-			.state(CourseStateRequest::Archived)
-			.build();
-
-		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_archive)
 			.await
 			.map_err(Into::<DbError>::into)?;
 

@@ -213,7 +213,6 @@ async fn api_get_course(
 	Path(course_id): Path<i64>,
 ) -> AppResult<Json<CoursePayload>> {
 	let ctx = ctx.0;
-
 	let repository = Box::new(CourseRepository::new(dbm));
 
 	let course: Course = repository.get_course(&ctx, course_id).await?;

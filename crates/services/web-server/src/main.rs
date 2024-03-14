@@ -91,7 +91,7 @@ async fn main() -> AppResult<()> {
 		.init();
 
 	// -- FOR DEV ONLY
-	_dev_utils::init_dev().await;
+	// _dev_utils::init_dev().await;
 
 	let dbm = DbManager::new().await?;
 
