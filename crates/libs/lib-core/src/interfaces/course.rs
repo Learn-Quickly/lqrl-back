@@ -1,10 +1,8 @@
-use std::error::Error;
-
 use async_trait::async_trait;
 
-use crate::{ctx::Ctx, model::course::{Course, CourseForCreate, CourseForUpdate, UserCourse}};
+use crate::{core::error::CoreError, ctx::Ctx, model::course::{Course, CourseForCreate, CourseForUpdate, UserCourse}};
 
-pub type CourseResult<T> = core::result::Result<T, Box<dyn Error>>;
+pub type CourseResult<T> = core::result::Result<T, CoreError>;
 
 #[async_trait]
 pub trait ICourseRepository {

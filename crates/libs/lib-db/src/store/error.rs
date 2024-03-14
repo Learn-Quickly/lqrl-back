@@ -1,22 +1,22 @@
-use crate::store::dbx;
 use derive_more::From;
 use lib_auth::pwd;
-use serde::Serialize;
-use serde_with::{serde_as, DisplayFromStr};
-use sqlx::error::DatabaseError;
-use std::borrow::Cow;
+use lib_core::core::error::CoreError;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+
+use super::dbx::error::DbxError;
 
 pub type DbResult<T> = core::result::Result<T, DbError>;
 
 #[serde_as]
-#[derive(Debug, Serialize, From)]
+#[derive(Debug, Serialize, Deserialize, From)]
 pub enum DbError {
 	EntityNotFound {
-		entity: &'static str,
+		entity: String,
 		id: i64,
 	},
 	UserCourseNotFound {
-		entity: &'static str,
+		entity: String,
 		user_id: i64,
 		course_id: i64,
 	},
@@ -50,65 +50,9 @@ pub enum DbError {
 	// -- Modules
 	#[from]
 	Pwd(pwd::PwdError),
-	#[from]
-	Dbx(dbx::error::StoreError),
 
-	// -- Externals
-	#[from]
-	SeaQuery(#[serde_as(as = "DisplayFromStr")] sea_query::error::Error),
-
-	#[from]
-	ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
+	Dbx(String),
 }
-
-impl DbError {
-	/// This function will transform the error into a more precise variant if it is an SQLX or PGError Unique Violation.
-	/// The resolver can contain a function (table_name: &str, constraint: &str) that may return a specific Error if desired.
-	/// If the resolver is None, or if the resolver function returns None, it will default to Error::UniqueViolation {table, constraint}.
-	pub fn resolve_unique_violation<F>(self, resolver: Option<F>) -> Self
-	where
-		F: FnOnce(&str, &str) -> Option<Self>,
-	{
-		match self.as_database_error().map(|db_error| {
-			(db_error.code(), db_error.table(), db_error.constraint())
-		}) {
-			// "23505" => postgresql "unique violation"
-			Some((Some(Cow::Borrowed("23505")), Some(table), Some(constraint))) => {
-				resolver
-					.and_then(|fun| fun(table, constraint))
-					.unwrap_or_else(|| DbError::UniqueViolation {
-						table: table.to_string(),
-						constraint: constraint.to_string(),
-					})
-			}
-			_ => self,
-		}
-	}
-
-	/// A convenient function to return the eventual database error (Postgres)
-	/// if this Error is an SQLX Error that contains a database error.
-	pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
-		match self {
-			DbError::Dbx(dbx::error::StoreError::Sqlx(sqlx_error)) => {
-				sqlx_error.as_database_error()
-			}
-			_ => None,
-		}
-	}
-
-	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> DbResult<T> {
-		let result = value.unwrap_or(
-			Err(DbError::MissingFieldError { 
-				entity: entity.clone(),
-				field,
-			})?
-		);
-
-		Ok(result)
-	}
-}
-
-// region:    --- Error Boilerplate
 
 impl core::fmt::Display for DbError {
 	fn fmt(
@@ -121,4 +65,34 @@ impl core::fmt::Display for DbError {
 
 impl std::error::Error for DbError {}
 
-// endregion: --- Error Boilerplate
+impl From<DbError> for CoreError {
+	fn from(db_error: DbError) -> Self {
+		let error_value = serde_json::to_value(db_error);
+		match error_value {
+			Ok(value) => CoreError::DbError(value),
+			Err(err) => CoreError::SerdeJson(err),
+		}
+	}
+}
+
+impl From<DbxError> for DbError {
+	fn from(dbx_error: DbxError) -> Self {
+		match dbx_error {
+			DbxError::DbError(db_error) => db_error,
+			_ => Self::Dbx(dbx_error.to_string())
+		}
+	}
+}
+
+impl DbError {
+	pub fn handle_option_field<T>(value: Option<T>, entity: &String, field: String) -> DbResult<T> {
+		let result = value.unwrap_or(
+			Err(DbError::MissingFieldError { 
+				entity: entity.clone(),
+				field,
+			})?
+		);
+
+		Ok(result)
+	}
+}

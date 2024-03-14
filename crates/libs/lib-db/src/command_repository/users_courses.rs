@@ -5,7 +5,7 @@ use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use crate::{base::DbRepository, store::{error::{DbError, DbResult}, DbManager}};
+use crate::{base::DbRepository, store::{dbx::error::DbxError, error::{DbError, DbResult}, DbManager}};
 
 #[derive(Iden)]
 pub enum UserCourseIden {
@@ -89,7 +89,8 @@ impl UsersCoursesRepository {
 	    query
 		    .into_table(Self::table_ref())
 		    .columns(columns)
-		    .values(sea_values)?
+		    .values(sea_values)
+			.map_err(DbxError::SeaQuery)?
 			.returning(Query::returning().columns([UserCourseIden::CourseId, UserCourseIden::UserId]));
 
 	    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
@@ -119,7 +120,7 @@ impl UsersCoursesRepository {
 				.fetch_optional(sqlx_query)
 				.await?
 				.ok_or(DbError::UserCourseNotFound { 
-					entity: Self::TABLE, 
+					entity: Self::TABLE.to_string(), 
 					user_id, 
 					course_id,
 				})?;
@@ -168,7 +169,7 @@ impl UsersCoursesRepository {
 		// -- Check result
 		if count == 0 {
 			Err(DbError::UserCourseNotFound {
-				entity: Self::TABLE,
+				entity: Self::TABLE.to_string(),
 				user_id: users_courses_d.user_id,
 				course_id: users_courses_d.course_id,
 			}) 

@@ -1,5 +1,6 @@
 use crate::base::{self, prep_fields_for_update, DbRepository};
 use crate::command_repository::modql_utils::time_to_sea_value;
+use crate::store::dbx::error::DbxError;
 use crate::store::error::{DbError, DbResult};
 use crate::store::DbManager;
 use lib_auth::pwd::{self, ContentToHash};
@@ -116,8 +117,8 @@ impl UserBmc {
 
 		let user_id = base::create::<Self, _>(ctx, &dbm, user_fi).await.map_err(
 			|model_error| {
-				DbError::resolve_unique_violation(
-					model_error,
+				DbxError::resolve_unique_violation(
+					model_error.into(),
 					Some(|table: &str, constraint: &str| {
 						if table == "user" && constraint.contains("username") {
 							Some(DbError::UserAlreadyExists { username })
@@ -142,7 +143,7 @@ impl UserBmc {
 	where
 		E: UserBy,
 	{
-		base::get::<Self, _>(ctx, dbm, id).await
+		base::get::<Self, _>(ctx, dbm, id).await.map_err(Into::<DbError>::into)
 	}
 
 	pub async fn first_by_username<E>(
@@ -175,7 +176,7 @@ impl UserBmc {
 		filter: Option<Vec<UserFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<User>> {
-		base::list::<Self, _, _>(ctx, dbm, filter, list_options).await
+		base::list::<Self, _, _>(ctx, dbm, filter, list_options).await.map_err(Into::<DbError>::into)
 	}
 
 	pub async fn update_pwd(
@@ -220,7 +221,7 @@ impl UserBmc {
 	///       - It's likely necessary to record this action in a `um_change_log` (a user management change audit table).
 	///       - Remove or clean up any user-specific assets (messages, etc.).
 	pub async fn delete(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<()> {
-		base::delete::<Self>(ctx, dbm, id).await
+		base::delete::<Self>(ctx, dbm, id).await.map_err(Into::<DbError>::into)
 	}
 }
 

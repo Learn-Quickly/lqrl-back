@@ -2,7 +2,8 @@ use crate::base::{
 	prep_fields_for_create, prep_fields_for_update, CommonIden, DbRepository,
 	LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX,
 };
-use crate::store::error::{DbError, DbResult};
+use crate::store::dbx::error::{DbxError, DbxResult};
+use crate::store::error::DbError;
 use crate::store::DbManager;
 use lib_core::ctx::Ctx;
 use modql::field::HasFields;
@@ -12,7 +13,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
 
-pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> DbResult<i64>
+pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> DbxResult<i64>
 where
 	MC: DbRepository,
 	E: HasFields,
@@ -42,7 +43,7 @@ where
 	Ok(id)
 }
 
-pub async fn get<MC, E>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<E>
+pub async fn get<MC, E>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbxResult<E>
 where
 	MC: DbRepository,
 	E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
@@ -62,10 +63,10 @@ where
 		dbm.dbx()
 			.fetch_optional(sqlx_query)
 			.await?
-			.ok_or(DbError::EntityNotFound {
-				entity: MC::TABLE,
+			.ok_or(DbxError::DbError(DbError::EntityNotFound {
+				entity: MC::TABLE.to_string(),
 				id,
-			})?;
+			}))?;
 
 	Ok(entity)
 }
@@ -75,7 +76,7 @@ pub async fn list<MC, E, F>(
 	dbm: &DbManager,
 	filter: Option<F>,
 	list_options: Option<ListOptions>,
-) -> DbResult<Vec<E>>
+) -> DbxResult<Vec<E>>
 where
 	MC: DbRepository,
 	F: Into<FilterGroups>,
@@ -110,7 +111,7 @@ pub async fn update<MC, E>(
 	dbm: &DbManager,
 	id: i64,
 	data: E,
-) -> DbResult<()>
+) -> DbxResult<()>
 where
 	MC: DbRepository,
 	E: HasFields,
@@ -134,16 +135,16 @@ where
 
 	// -- Check result
 	if count == 0 {
-		Err(DbError::EntityNotFound {
-			entity: MC::TABLE,
+		Err(DbxError::DbError(DbError::EntityNotFound {
+			entity: MC::TABLE.to_string(),
 			id,
-		})
+		}))
 	} else {
 		Ok(())
 	}
 }
 
-pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<()>
+pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbxResult<()>
 where
 	MC: DbRepository,
 {
@@ -160,10 +161,10 @@ where
 
 	// -- Check result
 	if count == 0 {
-		Err(DbError::EntityNotFound {
-			entity: MC::TABLE,
+		Err(DbxError::DbError(DbError::EntityNotFound {
+			entity: MC::TABLE.to_string(),
 			id,
-		})
+		}))
 	} else {
 		Ok(())
 	}
@@ -171,15 +172,15 @@ where
 
 pub fn compute_list_options(
 	list_options: Option<ListOptions>,
-) -> DbResult<ListOptions> {
+) -> DbxResult<ListOptions> {
 	if let Some(mut list_options) = list_options {
 		// Validate the limit.
 		if let Some(limit) = list_options.limit {
 			if limit > LIST_LIMIT_MAX {
-				return Err(DbError::ListLimitOverMax {
+				return Err(DbxError::DbError(DbError::ListLimitOverMax {
 					max: LIST_LIMIT_MAX,
 					actual: limit,
-				});
+				}));
 			}
 		}
 		// Set the default limit if no limit

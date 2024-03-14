@@ -26,12 +26,12 @@ impl DbManager {
 		let db_pool = new_db_pool()
 			.await
 			.map_err(|ex| DbError::CantCreateDbManagerProvider(ex.to_string()))?;
-		let dbx = Dbx::new(db_pool, false)?;
+		let dbx = Dbx::new(db_pool, false).map_err(|err| DbError::Dbx(err.to_string()))?;
 		Ok(DbManager { dbx })
 	}
 
 	pub fn new_with_txn(&self) -> DbResult<Self> {
-		let dbx = Dbx::new(self.dbx.db().clone(), true)?;
+		let dbx = Dbx::new(self.dbx.db().clone(), true).map_err(|err| DbError::Dbx(err.to_string()))?;
 		Ok(DbManager { dbx })
 	}
 

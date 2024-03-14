@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::log::log_request;
+use crate::web::middleware::log::log_request;
 use axum::http::{Method, Uri};
 use axum::response::{IntoResponse, Response};
 use axum::Json;

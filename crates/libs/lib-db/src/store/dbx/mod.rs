@@ -8,7 +8,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use self::error::{DbxResult, StoreError};
+use self::error::{DbxResult, DbxError};
 
 use super::Db;
 
@@ -69,7 +69,7 @@ impl DerefMut for TxnHolder {
 impl Dbx {
 	pub async fn begin_txn(&self) -> DbxResult<()> {
 		if !self.with_txn {
-			return Err(StoreError::CannotBeginTxnWithTxnFalse);
+			return Err(DbxError::CannotBeginTxnWithTxnFalse);
 		}
 
 		let mut txh_g = self.txn_holder.lock().await;
@@ -88,7 +88,7 @@ impl Dbx {
 
 	pub async fn commit_txn(&self) -> DbxResult<()> {
 		if !self.with_txn {
-			return Err(StoreError::CannotCommitTxnWithTxnFalse);
+			return Err(DbxError::CannotCommitTxnWithTxnFalse);
 		}
 
 		let mut txh_g = self.txn_holder.lock().await;
@@ -107,7 +107,7 @@ impl Dbx {
 		}
 		// Ohterwise, we have an error
 		else {
-			Err(StoreError::TxnCantCommitNoOpenTxn)
+			Err(DbxError::TxnCantCommitNoOpenTxn)
 		}
 	}
 

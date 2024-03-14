@@ -1,19 +1,28 @@
 use derive_more::From;
 use serde::Serialize;
+use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr};
+use std::fmt::Debug;
+
 
 #[serde_as]
 #[derive(Debug, Serialize, From)]
 pub enum CoreError {
 	// Course error
     CourseMustBePublishedError,
-	PermissionDenied,
 	CreatorCannotSubscribeToTheCourse,
 	CannotRegisterForCourseTwice,
+	PermissionDenied,
 
 	// File error
 	#[from]
 	IOError(#[serde_as(as = "DisplayFromStr")] std::io::Error),
+
+	#[from]
+	SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
+
+	#[from]
+	DbError(Value),
 }
 
 impl core::fmt::Display for CoreError {
@@ -25,4 +34,4 @@ impl core::fmt::Display for CoreError {
 	}
 }
 
-impl std::error::Error for CoreError { }
+impl std::error::Error for CoreError {}

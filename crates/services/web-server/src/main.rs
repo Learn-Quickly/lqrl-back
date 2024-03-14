@@ -1,7 +1,6 @@
 // region:    --- Modules
 
 mod config;
-mod log;
 mod web;
 mod error;
 
@@ -107,8 +106,8 @@ async fn main() -> AppResult<()> {
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
 		.layer(middleware::map_response(mw_reponse_map))
-		.layer(middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
 		.merge(routes_login::routes(dbm.clone()))
+        .layer(middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
 		.merge(routes_register::routes(dbm.clone()))
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))

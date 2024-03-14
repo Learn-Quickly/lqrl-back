@@ -14,6 +14,7 @@ use time::OffsetDateTime;
 use typed_builder::TypedBuilder;
 use crate::base::{self, DbRepository};
 use crate::command_repository::modql_utils::time_to_sea_value;
+use crate::store::dbx::error::DbxError;
 use crate::store::error::DbError;
 use crate::store::DbManager;
 use lib_utils::time::Rfc3339;
@@ -154,7 +155,7 @@ impl CourseRepository {
 	) -> CourseResult<Vec<Course>> {
 		let course_reqs = base::list::<Self, CourseRequest, _>(ctx, dbm, filter, list_options)
 			.await
-			.map_err(|db_err| Box::new(db_err))?;
+			.map_err(Into::<DbError>::into)?;
 
 		let mut result = Vec::new();
 		for course_req in course_reqs {
@@ -169,7 +170,7 @@ impl CourseRepository {
 	{
 		let result = base::get::<Self, CourseRequest>(ctx, dbm, id)
 			.await
-			.map_err(|db_err| Box::new(db_err))?
+			.map_err(Into::<DbError>::into)?
 			.try_into()?;
 
 		Ok(result)
@@ -192,7 +193,7 @@ impl ICourseRepository for CourseRepository {
 		let dbm = self.dbm.new_with_txn()?;
 
 		let title = course_c.title.clone();
-		dbm.dbx().begin_txn().await?;
+		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
 
 		let course_req_c = CourseRequest::builder()
 			.title(course_c.title)
@@ -204,7 +205,7 @@ impl ICourseRepository for CourseRepository {
 
 		let course_id = base::create::<Self, CourseRequest>(ctx, &dbm, course_req_c).await.map_err(
 			|model_error| {
-				Box::new(DbError::resolve_unique_violation(
+				DbxError::resolve_unique_violation(
 					model_error,
 					Some(|table: &str, constraint: &str| {
 						if table == "course" && constraint.contains("title") {
@@ -213,7 +214,7 @@ impl ICourseRepository for CourseRepository {
 							None // Error::UniqueViolation will be created by resolve_unique_violation
 						}
 					}),
-				))
+				)
 			}
 		)?;
 
@@ -225,7 +226,7 @@ impl ICourseRepository for CourseRepository {
 
 		UsersCoursesRepository::create(&dbm, users_courses_c).await?;
 
-		dbm.dbx().commit_txn().await?;
+		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
 		Ok(course_id)
 	}
@@ -250,7 +251,7 @@ impl ICourseRepository for CourseRepository {
 
 		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_u)
 			.await
-			.map_err(|db_err| Box::new(db_err))?;
+			.map_err(Into::<DbError>::into)?;
 
 		Ok(())
 	}
@@ -268,7 +269,7 @@ impl ICourseRepository for CourseRepository {
 
 		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_publish)
 			.await
-			.map_err(|db_err| Box::new(db_err))?;
+			.map_err(Into::<DbError>::into)?;
 
 		Ok(())
 	}
@@ -284,7 +285,7 @@ impl ICourseRepository for CourseRepository {
 
 		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_archive)
 			.await
-			.map_err(|db_err| Box::new(db_err))?;
+			.map_err(Into::<DbError>::into)?;
 
 		Ok(())
 	}
@@ -318,9 +319,7 @@ impl ICourseRepository for CourseRepository {
 			user_role: users_courses_c.user_role.into(),
 		};
 
-		UsersCoursesRepository::create(&self.dbm, user_course_req)
-			.await
-			.map_err(|db_err| Box::new(db_err))?;
+		UsersCoursesRepository::create(&self.dbm, user_course_req).await?;
 
 		Ok(())
 	}
@@ -336,9 +335,7 @@ impl ICourseRepository for CourseRepository {
 			course_id,
 		};
 
-		UsersCoursesRepository::delete(&self.dbm, user_course_req)
-			.await
-			.map_err(|db_err| Box::new(db_err))?;
+		UsersCoursesRepository::delete(&self.dbm, user_course_req).await?;
 
 		Ok(())
 	}

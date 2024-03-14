@@ -41,7 +41,7 @@ impl<'a> CourseController<'a> {
         let course = self.repository.get_course(&self.ctx, course_id).await?;
         let user_course = self.repository.get_user_course(&self.ctx, self.ctx.user_id(), course_id).await?;
         if !user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
-            return Err(Box::new(CoreError::PermissionDenied));
+            return Err(CoreError::PermissionDenied);
         }
 
         let new_img_url = upload_file(file_path, file_data).await?;
@@ -82,16 +82,16 @@ impl<'a> CourseController<'a> {
         let course = self.repository.get_course(&self.ctx, course_id).await?;
 
         if !course.state.eq(&crate::model::course::CourseState::Published) {
-            return Err(Box::new(CoreError::CourseMustBePublishedError))
+            return Err(CoreError::CourseMustBePublishedError)
         }
 
         let user_course = self.repository.get_user_course_optional(&self.ctx, self.ctx.user_id(), course_id).await?;
         if let Some(user_course) = user_course {
             if user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
-                return Err(Box::new(CoreError::CreatorCannotSubscribeToTheCourse));
+                return Err(CoreError::CreatorCannotSubscribeToTheCourse);
             }
             
-            return Err(Box::new(CoreError::CannotRegisterForCourseTwice));
+            return Err(CoreError::CannotRegisterForCourseTwice);
         }
 
         let course_for_register = UserCourse {

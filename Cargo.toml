@@ -6,9 +6,9 @@ unsafe_code = "forbid"
 resolver = "2"
 members = [
     # -- Application Libraries
-    "crates/libs/lib-utils", # e.g., base64, time.
-    "crates/libs/lib-auth", # e.g., for pwd, token.
-    "crates/libs/lib-db", # e.g., model, config.
+    "crates/libs/lib-utils", 
+    "crates/libs/lib-auth", 
+    "crates/libs/lib-db", 
     "crates/libs/lib-core",
 
     # -- Application Services

@@ -3,14 +3,11 @@ use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
-use lib_auth::pwd::PwdError;
-use lib_auth::token::TokenError;
 use lib_auth::{pwd, token};
 use lib_core::core::error::CoreError;
 use lib_db::store::error::DbError;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
-use std::error::Error;
 use std::sync::Arc;
 use tracing::debug;
 
@@ -37,6 +34,7 @@ pub enum AppError {
 	CtxExt(web::middleware::mw_auth::CtxExtError),
 
 	// -- Modules
+
 	#[from]
 	Core(CoreError),
 	#[from]
@@ -52,21 +50,16 @@ pub enum AppError {
 
 	#[from]
 	Multipart(#[serde_as(as = "DisplayFromStr")] MultipartError),
-
-	// -- File
-	CreateFileFail,
-	RemoveFileFail,
-
-	GenericError,
 }
 
 impl IntoResponse for AppError {
 	fn into_response(self) -> Response {
 		debug!("{:<12} - model::Error {self:?}", "INTO_RES");
 
-		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
+		let (status_code, client_error) = self.client_status_and_error();
+		let mut response = status_code.into_response();
 
-		response.extensions_mut().insert(Arc::new(self));
+		response.extensions_mut().insert(Arc::new(client_error));
 
 		response
 	}
@@ -82,49 +75,6 @@ impl core::fmt::Display for AppError {
 }
 
 impl std::error::Error for AppError {}
-
-macro_rules! impl_from_box {
-    ($from:ty, $to:ident) => {
-        impl From<Box<$from>> for AppError {
-            fn from(value: Box<$from>) -> Self {
-                AppError::$to(*value)
-            }
-        }
-    };
-}
-
-impl_from_box!(CoreError, Core);
-impl_from_box!(DbError, Db);
-impl_from_box!(PwdError, Pwd);
-impl_from_box!(TokenError, Token);
-impl_from_box!(serde_json::Error, SerdeJson);
-impl_from_box!(web::mw_auth::CtxExtError, CtxExt);
-impl_from_box!(MultipartError, Multipart);
-
-macro_rules! try_downcast_error {
-    ($error:expr, $($type:ty),*) => {
-        $( if let Ok(err) = $error.downcast::<$type>() {
-            return err.into();
-        } )*
-    };
-}
-
-impl From<Box<dyn Error>> for AppError {
-	fn from(error: Box<dyn Error>) -> Self {
-		try_downcast_error!(
-			error,
-			CoreError,
-			DbError,
-			PwdError,
-			TokenError,
-			serde_json::Error,
-			web::middleware::mw_auth::CtxExtError,
-			MultipartError
-		);
-
-		AppError::GenericError
-	}
-}
 
 impl AppError {
 	pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
@@ -142,28 +92,60 @@ impl AppError {
 			CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
 			// -- Db
-			Db(DbError::EntityNotFound { entity, id }) => (
-				StatusCode::BAD_REQUEST,
-				ClientError::ENTITY_NOT_FOUND { entity, id: *id },
-			),
-			Db(DbError::UserCourseNotFound{ entity, course_id, user_id}) => (
-				StatusCode::BAD_REQUEST,
-				ClientError::USER_COURSE_NOT_FOUND { 
-					entity, 
-					course_id: *course_id, 
-					user_id: *user_id 
-				},
-			),
-
+			Db(db_error) => map_db_error(db_error),
+			Core(CoreError::DbError(value)) => {
+				let db_error: Result<DbError, serde_json::Error> = serde_json::from_value(value.clone());
+				match db_error {
+					Ok(db_error) => map_db_error(&db_error),
+					Err(json_error) => internal_server_error(json_error.to_string()),
+				}
+			},
 			// -- Fallback.
-			_ => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				ClientError::SERVICE_ERROR {
-					description: self.to_string()
-				},
-			),
+			_ => internal_server_error(self.to_string()),
 		}
 	}
+}
+
+fn map_db_error(db_error: &DbError) -> (StatusCode, ClientError) {
+	match db_error {
+		DbError::EntityNotFound { entity, id } => (
+			StatusCode::BAD_REQUEST,
+			ClientError::ENTITY_NOT_FOUND { entity: entity.to_string(), id: *id },
+		),
+		DbError::UserCourseNotFound { entity, user_id, course_id } => (
+			StatusCode::BAD_REQUEST,
+			ClientError::USER_COURSE_NOT_FOUND { 
+				entity: entity.to_string(), 
+				course_id: *course_id, 
+				user_id: *user_id 
+			},
+		),
+		DbError::ListLimitOverMax { .. } |
+		DbError::UserAlreadyExists { .. } |
+		DbError::CourseAlreadyExists { .. } |
+		DbError::UniqueViolation { .. } |
+		DbError::CourseStateMustBePublished { .. } | 
+		DbError::MissingFieldError { .. } => bad_request(db_error.to_string()),
+		_ => internal_server_error(db_error.to_string()),
+	}
+}
+
+fn bad_request(description: String) -> (StatusCode, ClientError) {
+	(
+		StatusCode::BAD_REQUEST,
+		ClientError::BAD_REQUEST {
+			description,
+		},
+	)
+}
+
+fn internal_server_error(description: String) -> (StatusCode, ClientError) {
+	(
+		StatusCode::INTERNAL_SERVER_ERROR,
+		ClientError::SERVICE_ERROR {
+			description,
+		},
+	)
 }
 
 #[derive(Debug, Serialize, strum_macros::AsRefStr)]
@@ -172,12 +154,14 @@ impl AppError {
 pub enum ClientError {
 	LOGIN_FAIL,
 	NO_AUTH,
-	ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
+	ENTITY_NOT_FOUND { entity: String, id: i64 },
 	USER_COURSE_NOT_FOUND { 
-		entity: &'static str, 
+		entity: String, 
 		course_id: i64, 
 		user_id: i64 
 	},
+
+	BAD_REQUEST { description: String },
 
 	SERVICE_ERROR { description: String },
 }

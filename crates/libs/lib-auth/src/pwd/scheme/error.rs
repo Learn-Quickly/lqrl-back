@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub type Result<T> = core::result::Result<T, PwdSchemeError>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum PwdSchemeError {
 	Key,
 	Salt,

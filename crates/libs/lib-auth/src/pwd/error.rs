@@ -1,10 +1,10 @@
 use crate::pwd::scheme;
 use derive_more::From;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub type Result<T> = core::result::Result<T, PwdError>;
 
-#[derive(Debug, Serialize, From)]
+#[derive(Debug, Serialize, Deserialize, From)]
 pub enum PwdError {
 	PwdWithSchemeFailedParse,
 
