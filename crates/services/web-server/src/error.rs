@@ -56,10 +56,9 @@ impl IntoResponse for AppError {
 	fn into_response(self) -> Response {
 		debug!("{:<12} - model::Error {self:?}", "INTO_RES");
 
-		let (status_code, client_error) = self.client_status_and_error();
-		let mut response = status_code.into_response();
+		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
-		response.extensions_mut().insert(Arc::new(client_error));
+		response.extensions_mut().insert(Arc::new(self));
 
 		response
 	}

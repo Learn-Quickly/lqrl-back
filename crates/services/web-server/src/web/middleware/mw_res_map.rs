@@ -27,6 +27,7 @@ pub async fn mw_reponse_map(
 	let web_error = res.extensions().get::<Arc<AppError>>().map(Arc::as_ref);
 	let client_status_error = web_error.map(|se| se.client_status_and_error());
 
+	debug!("{:<12} - {:?}", "web_error ", web_error);
 	// -- If client error, build the new reponse.
 	let error_response =
 		client_status_error

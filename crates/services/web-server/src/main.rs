@@ -91,7 +91,7 @@ async fn main() -> AppResult<()> {
 		.init();
 
 	// -- FOR DEV ONLY
-	_dev_utils::init_dev().await;
+	// _dev_utils::init_dev().await;
 
 	let dbm = DbManager::new().await?;
 
@@ -105,10 +105,10 @@ async fn main() -> AppResult<()> {
 
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
-		.layer(middleware::map_response(mw_reponse_map))
-		.merge(routes_login::routes(dbm.clone()))
         .layer(middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
+		.merge(routes_login::routes(dbm.clone()))
 		.merge(routes_register::routes(dbm.clone()))
+		.layer(middleware::map_response(mw_reponse_map))
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
 		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))

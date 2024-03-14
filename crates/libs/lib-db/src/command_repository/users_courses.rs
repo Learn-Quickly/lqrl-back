@@ -83,7 +83,7 @@ impl UsersCoursesRepository {
         users_courses_c: UsersCoursesRequest,
     ) -> DbResult<()> {
 	    let fields = users_courses_c.not_none_fields();
-
+		
 	    let (columns, sea_values) = fields.for_sea_insert();
 	    let mut query = Query::insert();
 	    query
