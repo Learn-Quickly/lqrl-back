@@ -5,7 +5,7 @@ use crate::{core::error::CoreError, ctx::Ctx, model::course::{Course, CourseForC
 pub type CourseResult<T> = core::result::Result<T, CoreError>;
 
 #[async_trait]
-pub trait ICourseRepository {
+pub trait ICourseCommandRepository {
     async fn get_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<Course>;
 
     async fn create_draft(&self, ctx: &Ctx, course_c: CourseForCreate) -> CourseResult<i64>;

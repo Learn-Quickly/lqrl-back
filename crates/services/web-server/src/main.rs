@@ -16,7 +16,6 @@ use crate::web::middleware::mw_req_stamp::mw_req_stamp_resolver;
 use crate::web::middleware::mw_res_map::mw_reponse_map;
 use crate::web::routes::{routes_login, routes_register, routes_static, routes_course};
 use axum::{middleware, Router};
-use lib_db::_dev_utils;
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::EnvFilter;

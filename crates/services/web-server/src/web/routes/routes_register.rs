@@ -1,6 +1,6 @@
 use axum::{extract::State, routing::post, Json, Router};
-use lib_core::ctx::Ctx;
-use lib_db::{command_repository::user::{UserBmc, UserForCreate}, store::DbManager};
+use lib_core::{core::user::UserController, ctx::Ctx, model::user::UserForCreate};
+use lib_db::{command_repository::user::UserCommandRepository, store::DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use utoipa::ToSchema;
@@ -39,7 +39,9 @@ async fn api_register_handler(
         username: payload.username,
         pwd_clear: payload.pwd,
     };
-    UserBmc::create(&ctx, &dbm, user_c).await?;
+	let repository = UserCommandRepository::new(dbm);
+	let user_controller = UserController::new(&ctx, &repository);
+    user_controller.create_user(user_c).await?;
 
 	let body = Json(json!({
 		"result": {

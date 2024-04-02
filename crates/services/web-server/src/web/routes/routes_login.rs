@@ -4,8 +4,10 @@ use axum::{Json, Router};
 use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
+use lib_core::core::user::UserController;
 use lib_core::ctx::Ctx;
-use lib_db::command_repository::user::{UserBmc, UserForAuth, UserForLogin};
+use lib_db::command_repository::user::UserCommandRepository;
+use lib_db::query_repository::user::{UserData, UserQueryRepository};
 use lib_db::store::DbManager;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -43,7 +45,7 @@ async fn api_login_handler(
 	let root_ctx = Ctx::root_ctx();
 
 	// -- Get the user.
-	let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &dbm, &username)
+	let user: UserData = UserQueryRepository::first_by_username(&root_ctx, &dbm, &username)
 		.await?
 		.ok_or(AppError::LoginFailUsernameNotFound)?;
 
@@ -72,7 +74,9 @@ async fn api_login_handler(
 	// -- Update password scheme if needed
 	if let SchemeStatus::Outdated = scheme_status {
 		debug!("pwd encrypt scheme outdated, upgrading.");
-		UserBmc::update_pwd(&root_ctx, &dbm, user.id, &pwd_clear).await?;
+		let repository = UserCommandRepository::new(dbm);
+		let user_countroller = UserController::new(&root_ctx, &repository);
+		user_countroller.update_pwd(user.id, &pwd_clear).await?;
 	}
 
 	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
@@ -114,8 +118,8 @@ async fn api_refresh_access_token_handler(
 	let refresh_token: Token = payload.refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
 	// -- Get UserForAuth
-	let user: UserForAuth =
-		UserBmc::first_by_username(&Ctx::root_ctx(), &dbm, &refresh_token.ident)
+	let user: UserData =
+		UserQueryRepository::first_by_username(&Ctx::root_ctx(), &dbm, &refresh_token.ident)
 			.await
 			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
 			.ok_or(CtxExtError::UserNotFound)?;

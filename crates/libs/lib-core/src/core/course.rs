@@ -1,14 +1,14 @@
-use crate::{ctx::Ctx, interfaces::course::{CourseResult, ICourseRepository}, model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}};
+use crate::{ctx::Ctx, interfaces::course::{CourseResult, ICourseCommandRepository}, model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}};
 
-use super::{error::CoreError, img_file::{remove_file, upload_file}};
+use super::{error::{CoreError, CourseError}, img_file::{remove_file, upload_file}};
 
 pub struct CourseController<'a> {
     ctx: &'a Ctx,
-    repository: &'a (dyn ICourseRepository + Send + Sync),
+    repository: &'a (dyn ICourseCommandRepository + Send + Sync),
 }
 
 impl<'a> CourseController<'a> {
-    pub fn new(ctx: &'a Ctx, repository: &'a (impl ICourseRepository + Send + Sync)) -> Self {
+    pub fn new(ctx: &'a Ctx, repository: &'a (impl ICourseCommandRepository + Send + Sync)) -> Self {
         Self {
             ctx,
             repository,
@@ -101,16 +101,16 @@ impl<'a> CourseController<'a> {
         let course = self.repository.get_course(&self.ctx, course_id).await?;
 
         if !course.state.eq(&crate::model::course::CourseState::Published) {
-            return Err(CoreError::CourseMustBePublishedError)
+            return Err(CourseError::CourseMustBePublishedError.into())
         }
 
         let user_course = self.repository.get_user_course_optional(&self.ctx, self.ctx.user_id(), course_id).await?;
         if let Some(user_course) = user_course {
             if user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
-                return Err(CoreError::CreatorCannotSubscribeToTheCourse);
+                return Err(CourseError::CreatorCannotSubscribeToTheCourse.into());
             }
             
-            return Err(CoreError::CannotRegisterForCourseTwice);
+            return Err(CourseError::CannotRegisterForCourseTwice.into());
         }
 
         let course_for_register = UserCourse {

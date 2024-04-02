@@ -9,7 +9,7 @@ use axum_auth::AuthBearer;
 use derive_more::Display;
 use lib_auth::token::{validate_web_token, Token};
 use lib_core::ctx::Ctx;
-use lib_db::command_repository::user::{UserBmc, UserForAuth};
+use lib_db::query_repository::user::{UserData, UserQueryRepository};
 use lib_db::store::DbManager;
 use serde::Serialize;
 use tracing::debug;
@@ -50,8 +50,8 @@ async fn ctx_resolve(dbm: DbManager, token: &str) -> CtxExtResult {
 	let token: Token = token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
 	// -- Get UserForAuth
-	let user: UserForAuth =
-		UserBmc::first_by_username(&Ctx::root_ctx(), &dbm, &token.ident)
+	let user: UserData =
+		UserQueryRepository::first_by_username(&Ctx::root_ctx(), &dbm, &token.ident)
 			.await
 			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
 			.ok_or(CtxExtError::UserNotFound)?;
@@ -59,10 +59,6 @@ async fn ctx_resolve(dbm: DbManager, token: &str) -> CtxExtResult {
 	// -- Validate Token
 	validate_web_token(&token, user.token_salt)
 		.map_err(|_| CtxExtError::FailValidate)?;
-
-	// // -- Update Token
-	// set_token_cookie(cookies, &user.username, user.token_salt)
-	// 	.map_err(|_| CtxExtError::CannotSetTokenCookie)?;
 
 	// -- Create CtxExtResult
 	Ctx::new(user.id)

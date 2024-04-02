@@ -1,10 +1,9 @@
 use async_trait::async_trait;
 use derive_more::Display;
 use lib_core::ctx::Ctx;
-use lib_core::interfaces::course::{ICourseRepository, CourseResult};
+use lib_core::interfaces::course::{ICourseCommandRepository, CourseResult};
 use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, CourseState, UserCourse};
 use modql::field::{Fields, HasFields};
-use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
 use sea_query::Nullable;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -13,7 +12,6 @@ use sqlx::FromRow;
 use time::OffsetDateTime;
 use typed_builder::TypedBuilder;
 use crate::base::{self, DbRepository};
-use crate::command_repository::modql_utils::time_to_sea_value;
 use crate::store::dbx::error::DbxError;
 use crate::store::error::DbError;
 use crate::store::DbManager;
@@ -122,78 +120,31 @@ pub trait CourseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl CourseBy for CourseRequest {}
 
-#[derive(FilterNodes, Deserialize, Default, Debug)]
-pub struct CourseFilter {
-	pub id: Option<OpValsInt64>,
-	pub title: Option<OpValsString>,
-	pub description: Option<OpValsString>,
-	pub course_type: Option<OpValsString>,
-	pub price: Option<OpValsFloat64>,
-	pub color: Option<OpValsString>,
-	pub state: Option<OpValsString>,
-
-	#[modql(to_sea_value_fn = "time_to_sea_value")]
-	pub publish_date: Option<OpValsInt64>,
-
-	pub cid: Option<OpValsInt64>,
-	#[modql(to_sea_value_fn = "time_to_sea_value")]
-	pub ctime: Option<OpValsValue>,
-	pub mid: Option<OpValsInt64>,
-	#[modql(to_sea_value_fn = "time_to_sea_value")]
-	pub mtime: Option<OpValsValue>,
-}
-
-pub struct CourseRepository {
+pub struct CourseCommandRepository {
 	dbm: DbManager,
 }
 
-impl DbRepository for CourseRepository {
+impl DbRepository for CourseCommandRepository {
     const TABLE: &'static str = "course";
 }
 
-impl CourseRepository {
+impl CourseCommandRepository {
 	pub fn new(dbm: DbManager) -> Self {
 		Self {
     		dbm,
 		}
 	}
+}
 
-	pub async fn list(
-		ctx: &Ctx,
-		dbm: &DbManager,
-		filter: Option<Vec<CourseFilter>>,
-		list_options: Option<ListOptions>,
-	) -> CourseResult<Vec<Course>> {
-		let course_reqs = base::list::<Self, CourseRequest, _>(ctx, dbm, filter, list_options)
-			.await
-			.map_err(Into::<DbError>::into)?;
-
-		let mut result = Vec::new();
-		for course_req in course_reqs {
-			let course = course_req.try_into()?;
-			result.push(course);
-		}
-
-		Ok(result)
-	}
-
-	async fn get(ctx: &Ctx, dbm: &DbManager, id: i64) -> CourseResult<Course>
-	{
-		let result = base::get::<Self, CourseRequest>(ctx, dbm, id)
+#[async_trait]
+impl ICourseCommandRepository for CourseCommandRepository {
+	async fn get_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<Course> {
+		let result = base::get::<Self, CourseRequest>(ctx, &self.dbm, course_id)
 			.await
 			.map_err(Into::<DbError>::into)?
 			.try_into()?;
 
 		Ok(result)
-	}
-}
-
-#[async_trait]
-impl ICourseRepository for CourseRepository {
-	async fn get_course(&self, ctx: &Ctx, course_id: i64) -> CourseResult<Course> {
-		let course_request = Self::get(&ctx, &self.dbm, course_id).await?;
-
-		Ok(course_request)
 	}
 
 	async fn create_draft(

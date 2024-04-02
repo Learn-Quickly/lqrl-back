@@ -1,6 +1,6 @@
 use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_core::{core::course::CourseController, interfaces::course::ICourseRepository, model::course::{Course, CourseForCreate, CourseState}};
-use lib_db::{command_repository::course::CourseRepository, store::DbManager};
+use lib_core::{core::course::CourseController, model::course::CourseForCreate};
+use lib_db::{command_repository::course::CourseCommandRepository, query_repository::course::{CourseQuery, CourseStateQuery, CourseQueryRepository}, store::DbManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
@@ -62,7 +62,7 @@ async fn api_create_course_draft(
     	color: paylod.color,
 	};
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 
 	let course_id = course_controller.create_draft(course_c).await?;
@@ -99,7 +99,7 @@ async fn api_publish_course(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 	course_controller.publish_course(course_id.course_id).await?;
 
@@ -130,7 +130,7 @@ async fn api_archive_course(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 
 	course_controller.archive_course(course_id.course_id).await?;
@@ -167,19 +167,21 @@ pub enum CourseStatePayload {
     None,
 }
 
-impl From<CourseState> for CourseStatePayload {
-	fn from(value: CourseState) -> Self {
+impl From<CourseStateQuery> for CourseStatePayload {
+	fn from(value: CourseStateQuery) -> Self {
 		match value {
-			CourseState::Draft => Self::Draft,
-			CourseState::Published => Self::Published,
-			CourseState::Archived => Self::Archived,
-			CourseState::None => Self::None,
+			CourseStateQuery::Draft => Self::Draft,
+			CourseStateQuery::Published => Self::Published,
+			CourseStateQuery::Archived => Self::Archived,
+			CourseStateQuery::None => Self::None,
 		}
 	}
 }
 
-impl From<Course> for CoursePayload {
-	fn from(value: Course) -> Self {
+impl From<CourseQuery> for CoursePayload {
+	fn from(value: CourseQuery) -> Self {
+		let published_date = value.published_date.and_then(|date| Some(date.unix_timestamp()));
+
 		Self {
     		id: value.id,
     		title: value.title,
@@ -187,7 +189,7 @@ impl From<Course> for CoursePayload {
     		course_type: value.course_type,
     		price: value.price,
     		color: value.color,
-    		published_date: value.published_date,
+    		published_date,
     		img_url: value.img_url,
     		state: value.state.into(),
 		}
@@ -213,9 +215,8 @@ async fn api_get_course(
 	Path(course_id): Path<i64>,
 ) -> AppResult<Json<CoursePayload>> {
 	let ctx = ctx.0;
-	let repository = Box::new(CourseRepository::new(dbm));
 
-	let course: Course = repository.get_course(&ctx, course_id).await?;
+	let course = CourseQueryRepository::get(&ctx, &dbm, course_id).await?;
 
 	Ok(Json(course.into()))
 }
@@ -266,7 +267,7 @@ async fn api_get_courses(
 		None
 	};
 
-	let courses: Vec<Course> = CourseRepository::list(&ctx, &dbm, filters, list_options).await?;
+	let courses: Vec<CourseQuery> = CourseQueryRepository::list(&ctx, &dbm, filters, list_options).await?;
 	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
 	Ok(Json(body))
@@ -295,7 +296,7 @@ async fn api_set_course_img_handler(
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 
     while let Some(field) = multipart.next_field().await? {
@@ -347,7 +348,7 @@ async fn api_register_for_course(
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 
 	course_controller.register_for_course(course_id).await?;
@@ -380,7 +381,7 @@ async fn api_unsubscribe_from_course(
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = CourseRepository::new(dbm);
+	let repository = CourseCommandRepository::new(dbm);
 	let course_controller = CourseController::new(&ctx, &repository);
 
 	course_controller.unsubscribe_from_course(course_id).await?;
