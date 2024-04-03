@@ -1,4 +1,4 @@
-use crate::web;
+use crate::middleware;
 use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -31,7 +31,7 @@ pub enum AppError {
 
 	// -- CtxExtError
 	#[from]
-	CtxExt(web::middleware::mw_auth::CtxExtError),
+	CtxExt(middleware::mw_auth::CtxExtError),
 
 	// -- Modules
 

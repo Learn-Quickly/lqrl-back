@@ -1,8 +1,7 @@
-// region:    --- Modules
-
 mod config;
-mod web;
 mod error;
+mod middleware;
+mod routes;
 
 use config::web_config;
 use lib_db::_dev_utils;
@@ -12,11 +11,11 @@ use tower_http::services::ServeDir;
 use utoipa::openapi::security::Http;
 use error::AppResult;
 
-use crate::web::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
-use crate::web::middleware::mw_req_stamp::mw_req_stamp_resolver;
-use crate::web::middleware::mw_res_map::mw_reponse_map;
-use crate::web::routes::{routes_login, routes_register, routes_static, routes_course};
-use axum::{middleware, Router};
+use crate::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
+use crate::middleware::mw_req_stamp::mw_req_stamp_resolver;
+use crate::middleware::mw_res_map::mw_reponse_map;
+use crate::routes::{routes_login, routes_register, routes_static, routes_course};
+use axum::{middleware as axum_middleware, Router};
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -91,8 +90,8 @@ async fn main() -> AppResult<()> {
 
 	let dbm = DbManager::new().await?;
 
-	let routes_course = web::routes::routes_course::routes(dbm.clone())
-		.route_layer(middleware::from_fn(mw_ctx_require));
+	let routes_course = routes::routes_course::routes(dbm.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
 	let cors = CorsLayer::new()
 		.allow_methods(Any)
@@ -101,11 +100,11 @@ async fn main() -> AppResult<()> {
 
 	let routes_all = Router::new()
 		.nest("/api", routes_course)
-        .layer(middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
+        .layer(axum_middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
 		.merge(routes_login::routes(dbm.clone()))
 		.merge(routes_register::routes(dbm.clone()))
-		.layer(middleware::map_response(mw_reponse_map))
-		.layer(middleware::from_fn(mw_req_stamp_resolver))
+		.layer(axum_middleware::map_response(mw_reponse_map))
+		.layer(axum_middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
 		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
 		.fallback_service(routes_static::serve_dir())
