@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::post, Json, Router};
-use lib_core::{core::user::UserController, ctx::Ctx, model::user::UserForCreate};
+use lib_core::{core::user::UserController, ctx::Ctx};
 use lib_db::{command_repository::user::UserCommandRepository, store::DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -35,13 +35,9 @@ async fn api_register_handler(
 ) -> AppResult<Json<Value>> {
     let ctx = Ctx::root_ctx();
 
-    let user_c = UserForCreate {
-        username: payload.username,
-        pwd_clear: payload.pwd,
-    };
 	let repository = UserCommandRepository::new(dbm);
 	let user_controller = UserController::new(&ctx, &repository);
-    user_controller.create_user(user_c).await?;
+    user_controller.create_user(payload.pwd, payload.username).await?;
 
 	let body = Json(json!({
 		"result": {

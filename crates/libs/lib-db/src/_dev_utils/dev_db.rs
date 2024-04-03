@@ -73,12 +73,12 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 	let ctx = Ctx::root_ctx();
 
 	// -- Set demo1 pwd
-	let demo1_user: UserData = UserQueryRepository::first_by_username(&ctx, &dbm, "demo1")
-		.await?
-		.unwrap();
-	let repository = UserCommandRepository::new(dbm);
-	let user_controller = UserController::new(&ctx, &repository);
-	user_controller.update_pwd(demo1_user.id, DEMO_PWD).await?;
+	// let demo1_user: UserData = UserQueryRepository::first_by_username(&ctx, &dbm, "demo1")
+	// 	.await?
+	// 	.unwrap();
+	// let repository = UserCommandRepository::new(dbm);
+	// let user_controller = UserController::new(&ctx, &repository);
+	// user_controller.update_pwd(demo1_user.id, DEMO_PWD).await?;
 	info!("{:<12} - init_dev_db - set demo1 pwd", "FOR-DEV-ONLY");
 
 	Ok(())

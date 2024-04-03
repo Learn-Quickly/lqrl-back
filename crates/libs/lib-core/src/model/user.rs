@@ -12,7 +12,9 @@ pub struct User {
 
 pub struct UserForCreate {
 	pub username: String,
-	pub pwd_clear: String,
+	pub pwd: String,
+	pub pwd_salt: Uuid,
+	pub token_salt: Uuid,
 }
 
 pub struct UserForUpdate {

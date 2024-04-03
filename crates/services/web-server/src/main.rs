@@ -5,6 +5,7 @@ mod web;
 mod error;
 
 use config::web_config;
+use lib_db::_dev_utils;
 use lib_db::store::DbManager;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
@@ -25,11 +26,9 @@ use utoipa::{
 };
 
 use utoipa_swagger_ui::SwaggerUi;
-// endregion: --- Modules
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-	// region:    --- OpenApi
 	#[derive(OpenApi)]
     #[openapi(
         paths(
@@ -79,8 +78,6 @@ async fn main() -> AppResult<()> {
             }
         }
     }
-
-	// endregion: --- OpenApi
 	
 	tracing_subscriber::fmt()
 		.without_time() // For early local development.
@@ -90,7 +87,7 @@ async fn main() -> AppResult<()> {
 		.init();
 
 	// -- FOR DEV ONLY
-	// _dev_utils::init_dev().await;
+	_dev_utils::init_dev().await;
 
 	let dbm = DbManager::new().await?;
 
@@ -114,14 +111,11 @@ async fn main() -> AppResult<()> {
 		.fallback_service(routes_static::serve_dir())
 		.layer(cors);
 
-	// region:    --- Start Server
-	// Note: For this block, ok to unwrap.
 	let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
 	info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
 	axum::serve(listener, routes_all.into_make_service())
 		.await
 		.unwrap();
-	// endregion: --- Start Server
 
 	Ok(())
 }

@@ -9,8 +9,8 @@ CREATE TABLE "user" (
 
   -- Auth
   pwd varchar(256),
-  pwd_salt uuid NOT NULL DEFAULT gen_random_uuid(),
-  token_salt uuid NOT NULL DEFAULT gen_random_uuid(),
+  pwd_salt uuid NOT NULL,
+  token_salt uuid NOT NULL,
 
   -- Timestamps
   cid bigint NOT NULL,

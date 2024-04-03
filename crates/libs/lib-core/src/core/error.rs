@@ -1,4 +1,5 @@
 use derive_more::From;
+use lib_auth::pwd::PwdError;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr};
@@ -10,7 +11,9 @@ use std::fmt::Debug;
 pub enum CoreError {
 	PermissionDenied,
 
+	#[from]
 	CourseError(CourseError),
+	#[from]
 	UserError(UserError),
 
 	// File error
@@ -43,20 +46,12 @@ pub enum CourseError {
 	CannotRegisterForCourseTwice,
 }
 
-impl From<CourseError> for CoreError {
-	fn from(course_error: CourseError) -> Self {
-		CoreError::CourseError(course_error)
-	}
-}
-
-#[derive(Debug, Serialize)]
+#[serde_as]
+#[derive(Debug, Serialize, From)]
 pub enum UserError {
 	WrongPasswordError { user_id: i64 },
 	UserHasNoPwd { user_id: i64 },
-}
-
-impl From<UserError> for CoreError {
-	fn from(user_error: UserError) -> Self {
-		CoreError::UserError(user_error)
-	}
+	
+	#[from]
+	PwdError(PwdError),
 }

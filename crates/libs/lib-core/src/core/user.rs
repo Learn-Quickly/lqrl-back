@@ -1,4 +1,5 @@
 use lib_auth::pwd::{self, ContentToHash};
+use uuid::Uuid;
 
 use crate::{
     ctx::Ctx,
@@ -29,17 +30,29 @@ impl<'a> UserController<'a> {
 }
 
 impl<'a> UserController<'a> {
-    pub async fn create_user(&self, user_for_c: UserForCreate) -> UserResult<i64> {
+    pub async fn create_user(&self, pwd_clear: String, username: String) -> UserResult<i64> {
+        let pwd_salt = Uuid::new_v4();
+        let token_salt = Uuid::new_v4();
+
+        let pwd = pwd::hash_pwd(ContentToHash {
+			content: pwd_clear.to_string(),
+			salt: pwd_salt,
+		})
+		.await
+        .map_err(|err| UserError::PwdError(err))?;
+        
+        let user_for_c = UserForCreate {
+            username,
+            pwd,
+            pwd_salt,
+            token_salt,
+        };
+
         self.repository.create_user(&self.ctx, user_for_c).await
     }
 
     pub async fn update_user(&self, user_for_u: UserForUpdate) -> UserResult<()> {
         self.repository.update_user(&self.ctx, user_for_u).await
-    }
-
-    /// For update scheme
-    pub async fn update_pwd(&self, user_id: i64, pwd: &str) -> UserResult<()> {
-        self.repository.update_pwd(&self.ctx, user_id, pwd).await
     }
 
     pub async fn change_pwd(&self, user_for_change_pwd: UserForChangePassword) -> UserResult<()> {
@@ -58,6 +71,18 @@ impl<'a> UserController<'a> {
 	    .await
 	    .map_err(|_| UserError::WrongPasswordError{ user_id })?;
 
-        self.repository.update_pwd(&self.ctx, self.ctx.user_id(), &user_for_change_pwd.new_pwd_clear).await
+        self.update_pwd(self.ctx.user_id(), &user_for_change_pwd.new_pwd_clear).await
+    }
+
+    pub async fn update_pwd(&self, user_id: i64, pwd_clear: &str) -> UserResult<()> {
+        let user = self.repository.get_user(&self.ctx, user_id).await?;
+		let pwd = pwd::hash_pwd(ContentToHash {
+			content: pwd_clear.to_string(),
+			salt: user.pwd_salt,
+		})
+		.await
+        .map_err(UserError::PwdError)?;
+
+        self.repository.update_pwd(&self.ctx, user_id, pwd).await
     }
 }
