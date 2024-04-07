@@ -15,12 +15,12 @@ use crate::{
 
 use super::error::UserError;
 
-pub struct UserController<'a> {
+pub struct UserInteractor<'a> {
     ctx: &'a Ctx,
     repository: &'a (dyn IUserCommandRepository + Send + Sync),
 }
 
-impl<'a> UserController<'a> {
+impl<'a> UserInteractor<'a> {
     pub fn new(ctx: &'a Ctx, repository: &'a (impl IUserCommandRepository + Send + Sync)) -> Self {
         Self {
             ctx,
@@ -29,7 +29,7 @@ impl<'a> UserController<'a> {
     }
 }
 
-impl<'a> UserController<'a> {
+impl<'a> UserInteractor<'a> {
     pub async fn create_user(&self, pwd_clear: String, username: String) -> UserResult<i64> {
         let pwd_salt = Uuid::new_v4();
         let token_salt = Uuid::new_v4();

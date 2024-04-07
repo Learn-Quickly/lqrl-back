@@ -23,8 +23,6 @@ pub trait UserBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl UserBy for UserData {}
 
-pub struct UserQueryRepository;
-
 #[derive(FilterNodes, Deserialize, Default, Debug)]
 pub struct UserFilter {
 	pub id: Option<OpValsInt64>,
@@ -43,6 +41,8 @@ pub struct UserFilter {
 enum UserIden {
 	Username,
 }
+
+pub struct UserQueryRepository;
 
 impl DbRepository for UserQueryRepository {
     const TABLE: &'static str = "user";
@@ -71,6 +71,13 @@ impl UserQueryRepository {
 		let entity = dbm.dbx().fetch_optional(sqlx_query).await?;
 
 		Ok(entity)
+	}
+
+	pub async fn get<E>(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<E>
+	where
+		E: UserBy,
+	{
+		base::get::<Self, _>(ctx, dbm, id).await.map_err(Into::<DbError>::into)
 	}
 
 	pub async fn list(

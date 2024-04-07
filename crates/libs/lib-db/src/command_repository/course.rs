@@ -17,7 +17,7 @@ use crate::store::error::DbError;
 use crate::store::DbManager;
 use lib_utils::time::{from_unix_timestamp, Rfc3339};
 
-use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesRepository, UsersCoursesRequest};
+use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesCommandRepository, UsersCoursesRequest};
 
 #[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize, TypedBuilder)]
@@ -186,7 +186,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
     		user_role: UserCourseRoleRequest::Creator,
 		};
 
-		UsersCoursesRepository::create(&dbm, users_courses_c).await?;
+		UsersCoursesCommandRepository::create(&dbm, users_courses_c).await?;
 
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
@@ -225,7 +225,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 	}
 
 	async fn get_user_course(&self, _: &Ctx, user_id: i64, course_id: i64) -> CourseResult<UserCourse> {
-		let user_course_req = UsersCoursesRepository::get(&self.dbm, user_id, course_id).await?;
+		let user_course_req = UsersCoursesCommandRepository::get(&self.dbm, user_id, course_id).await?;
 
 		Ok(user_course_req.into())
 	}
@@ -237,7 +237,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		user_id: i64, 
 		course_id: i64
 	) -> CourseResult<Option<UserCourse>> {
-		let user_course_req = UsersCoursesRepository::get_optional(&self.dbm, user_id, course_id).await?;
+		let user_course_req = UsersCoursesCommandRepository::get_optional(&self.dbm, user_id, course_id).await?;
 
 		Ok(user_course_req.and_then(|user_course| Some(user_course.into())))
 	}
@@ -253,7 +253,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 			user_role: users_courses_c.user_role.into(),
 		};
 
-		UsersCoursesRepository::create(&self.dbm, user_course_req).await?;
+		UsersCoursesCommandRepository::create(&self.dbm, user_course_req).await?;
 
 		Ok(())
 	}
@@ -269,7 +269,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 			course_id,
 		};
 
-		UsersCoursesRepository::delete(&self.dbm, user_course_req).await?;
+		UsersCoursesCommandRepository::delete(&self.dbm, user_course_req).await?;
 
 		Ok(())
 	}

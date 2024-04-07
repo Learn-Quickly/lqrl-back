@@ -1,4 +1,4 @@
-use lib_core::core::user::UserController;
+use lib_core::core::user::UserInteractor;
 use lib_core::ctx::Ctx;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
@@ -77,8 +77,8 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 		.await?
 		.unwrap();
 	let repository = UserCommandRepository::new(dbm);
-	let user_controller = UserController::new(&ctx, &repository);
-	user_controller.update_pwd(demo1_user.id, DEMO_PWD).await?;
+	let user_interactor = UserInteractor::new(&ctx, &repository);
+	user_interactor.update_pwd(demo1_user.id, DEMO_PWD).await?;
 	info!("{:<12} - init_dev_db - set demo1 pwd", "FOR-DEV-ONLY");
 
 	Ok(())

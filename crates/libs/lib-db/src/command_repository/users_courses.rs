@@ -67,9 +67,9 @@ pub struct UsersCoursesForDelete {
     pub course_id: i64,
 }
 
-pub struct UsersCoursesRepository;
+pub struct UsersCoursesCommandRepository;
 
-impl DbRepository for UsersCoursesRepository {
+impl DbRepository for UsersCoursesCommandRepository {
     const TABLE: &'static str = "users_courses";
 
 	fn has_timestamps() -> bool {
@@ -77,7 +77,7 @@ impl DbRepository for UsersCoursesRepository {
 	}
 }
 
-impl UsersCoursesRepository {
+impl UsersCoursesCommandRepository {
     pub async fn create(
         dbm: &DbManager,
         users_courses_c: UsersCoursesRequest,

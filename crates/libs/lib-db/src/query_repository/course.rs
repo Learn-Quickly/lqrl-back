@@ -1,16 +1,20 @@
 use derive_more::Display;
 use lib_core::ctx::Ctx;
-use modql::field::Fields;
+use modql::field::{Fields, HasFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
-use sea_query::Nullable;
+use sea_query::{Expr, Nullable, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::FromRow;
 use time::OffsetDateTime;
+use crate::base::CommonIden;
 use crate::query_repository::modql_utils::time_to_sea_value;
 use lib_utils::time::Rfc3339;
 
 use crate::{base::{self, DbRepository}, store::{error::{DbError, DbResult}, DbManager}};
+
+use super::users_courses::UsersCoursesQueryRepository;
 
 #[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize)]
@@ -95,6 +99,64 @@ impl CourseQueryRepository {
 		let result = base::get::<Self, CourseQuery>(ctx, dbm, id)
 			.await
 			.map_err(Into::<DbError>::into)?;
+
+		Ok(result)
+	}
+
+	pub async fn get_user_courses_registered(
+		_ctx: &Ctx,
+		dbm: &DbManager,
+		user_id: i64,
+	) -> DbResult<Vec<CourseQuery>> {
+		let user_courses = UsersCoursesQueryRepository::get_user_courses(
+			&dbm,
+			user_id, 
+			super::users_courses::UserCourseRoleQuery::Student
+		).await?;
+
+		let courses_ids: Vec<i64> = user_courses.iter().map(|user_course| user_course.course_id).collect();
+
+		let mut query = Query::select();
+		query
+			.from(Self::table_ref())
+			.columns(CourseQuery::field_column_refs())
+			.and_where(Expr::col(CommonIden::Id).is_in(courses_ids));
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_as_with::<_, CourseQuery, _>(&sql, values);
+		let result =
+			dbm.dbx()
+				.fetch_all(sqlx_query)
+				.await?;
+
+		Ok(result)
+	}
+
+	pub async fn get_user_courses_created(
+		_ctx: &Ctx,
+		dbm: &DbManager,
+		user_id: i64,
+	) -> DbResult<Vec<CourseQuery>> {
+		let user_courses = UsersCoursesQueryRepository::get_user_courses(
+			&dbm,
+			user_id, 
+			super::users_courses::UserCourseRoleQuery::Creator
+		).await?;
+
+		let courses_ids: Vec<i64> = user_courses.iter().map(|user_course| user_course.course_id).collect();
+
+		let mut query = Query::select();
+		query
+			.from(Self::table_ref())
+			.columns(CourseQuery::field_column_refs())
+			.and_where(Expr::col(CommonIden::Id).is_in(courses_ids));
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_as_with::<_, CourseQuery, _>(&sql, values);
+		let result =
+			dbm.dbx()
+				.fetch_all(sqlx_query)
+				.await?;
 
 		Ok(result)
 	}

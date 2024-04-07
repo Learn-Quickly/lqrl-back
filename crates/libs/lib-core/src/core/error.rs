@@ -14,6 +14,8 @@ pub enum CoreError {
 	#[from]
 	CourseError(CourseError),
 	#[from]
+	LessonError(LessonError),
+	#[from]
 	UserError(UserError),
 
 	// File error
@@ -44,6 +46,12 @@ pub enum CourseError {
     CourseMustBePublishedError,
 	CreatorCannotSubscribeToTheCourse,
 	CannotRegisterForCourseTwice,
+}
+
+#[derive(Debug, Serialize)]
+pub enum LessonError {
+	IncorrectLessonOreder { lesson_id: i64, order: i32 },
+	LessonNotFound { lesson_id: i64 },
 }
 
 #[serde_as]

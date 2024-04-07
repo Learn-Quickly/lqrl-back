@@ -1,5 +1,5 @@
-use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post}, Json, Router};
-use lib_core::{core::course::CourseController, model::course::CourseForCreate};
+use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post, put}, Json, Router};
+use lib_core::{core::course::CourseInteractor, model::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::{command_repository::course::CourseCommandRepository, query_repository::course::{CourseQuery, CourseStateQuery, CourseQueryRepository}, store::DbManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -10,14 +10,17 @@ use crate::{error::AppResult, middleware::mw_auth::CtxW};
 
 pub fn routes(dbm: DbManager) -> Router {
 	Router::new()
-		.route("/set_course_img/:i64", post(api_set_course_img_handler))
-		.route("/create_course_draft", post(api_create_course_draft))
-		.route("/publish_course", post(api_publish_course))
-		.route("/archive_course", post(api_archive_course))
-		.route("/register_for_course", post(api_register_for_course))
-		.route("/unsubscribe_from_course", post(api_unsubscribe_from_course))
-		.route("/get_course/:i64", get(api_get_course))
-		.route("/get_courses/", post(api_get_courses))
+		.route("/create_course_draft", post(api_create_course_draft_handler))
+		.route("/update", put(api_update_course_handler))
+		.route("/set_course_img/:i64", put(api_set_course_img_handler))
+		.route("/publish_course", put(api_publish_course_handler))
+		.route("/archive_course", put(api_archive_course_handler))
+		.route("/register_for_course", put(api_register_for_course_handler))
+		.route("/unsubscribe_from_course", put(api_unsubscribe_from_course_handler))
+		.route("/get_course/:i64", get(api_get_course_handler))
+		.route("/get_courses/", post(api_get_courses_handler))
+		.route("/get_user_courses_registered/", get(api_get_user_courses_registered_handler))
+		.route("/get_user_courses_created/", get(api_get_user_courses_created_handler))
 		.with_state(dbm)
 }
 
@@ -37,7 +40,7 @@ pub struct CreatedCourseDraft {
 
 #[utoipa::path(
 	post,
-	path = "/api/create_course_draft",
+	path = "/api/course/create_course_draft",
 	request_body = CourseCreateDraftPayload,
 	responses(
 		(status = 200, description = "Course draft created successfully", body = CreatedCourseDraft),
@@ -47,7 +50,7 @@ pub struct CreatedCourseDraft {
 		("bearerAuth" = [])
 	)
 )]
-async fn api_create_course_draft(
+async fn api_create_course_draft_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
 	Json(paylod): Json<CourseCreateDraftPayload>
@@ -63,9 +66,9 @@ async fn api_create_course_draft(
 	};
 
 	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
 
-	let course_id = course_controller.create_draft(course_c).await?;
+	let course_id = course_interactor.create_draft(course_c).await?;
 
 	let created_course_draft = CreatedCourseDraft {
     	course_id,
@@ -76,14 +79,65 @@ async fn api_create_course_draft(
 	Ok(body)
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct CourseUpdatePayload {
+	pub id: i64,
+	pub title: Option<String>,
+	pub description: Option<String>,
+	pub course_type: Option<String>,
+	pub price: Option<f64>,
+	pub color: Option<String>,
+}
+
+#[utoipa::path(
+	put,
+	path = "/api/course/update",
+	request_body = CourseUpdatePayload,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_update_course_handler(
+	ctx: CtxW,
+	State(dbm): State<DbManager>,
+	Json(payload): Json<CourseUpdatePayload>
+) -> AppResult<Json<Value>> {
+	let ctx = ctx.0;
+
+	let course_for_u = CourseForUpdate {
+    	title: payload.title,
+    	description: payload.description,
+    	course_type: payload.course_type,
+    	price: payload.price,
+    	color: payload.color,
+    	img_url: None,
+	};
+
+	let repository = CourseCommandRepository::new(dbm);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
+
+	course_interactor.update_course(course_for_u, payload.id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
+}
+
 #[derive(ToSchema, Deserialize)]
 pub struct CourseId {
 	course_id: i64,
 }
 
 #[utoipa::path(
-	post,
-	path = "/api/api_publish_course",
+	put,
+	path = "/api/course/publish_course",
 	request_body = CourseId,
 	responses(
 		(status = 200),
@@ -92,7 +146,7 @@ pub struct CourseId {
 		("bearerAuth" = [])
 	)
 )]
-async fn api_publish_course(
+async fn api_publish_course_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>,
@@ -100,8 +154,8 @@ async fn api_publish_course(
 	let ctx = ctx.0;
 
 	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
-	course_controller.publish_course(course_id.course_id).await?;
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	course_interactor.publish_course(course_id.course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -113,8 +167,8 @@ async fn api_publish_course(
 }
 
 #[utoipa::path(
-	post,
-	path = "/api/api_archive_course",
+	put,
+	path = "/api/course/archive_course",
 	request_body = CourseId,
 	responses(
 		(status = 200),
@@ -123,7 +177,7 @@ async fn api_publish_course(
 		("bearerAuth" = [])
 	)
 )]
-async fn api_archive_course(
+async fn api_archive_course_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
 	Json(course_id): Json<CourseId>,
@@ -131,9 +185,131 @@ async fn api_archive_course(
 	let ctx = ctx.0;
 
 	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
 
-	course_controller.archive_course(course_id.course_id).await?;
+	course_interactor.archive_course(course_id.course_id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
+}
+
+#[utoipa::path(
+	put,
+	path = "/api/course/set_course_img/{course_id}",
+	params(
+		("course_id", description = "ID of the course for which we set an avatar")
+	),
+	request_body(content_type = "multipart/formdata", content = Vec<u8>),
+	responses(
+		(status = 200, description = "Course image successfully set"),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+#[debug_handler]
+async fn api_set_course_img_handler(
+	ctx: CtxW,
+	State(dbm): State<DbManager>,
+	Path(course_id): Path<i64>,
+	mut multipart: Multipart,
+) -> AppResult<Json<Value>> {
+	let ctx = ctx.0;
+
+	let repository = CourseCommandRepository::new(dbm);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
+
+    while let Some(field) = multipart.next_field().await? {
+        let field_name = if let Some(field_name) = field.name() {
+			field_name.to_string()
+		} else {
+			continue;
+		};
+		
+        if field_name == "image" {
+            let data = field.bytes().await?;
+			let img_url = course_interactor.set_course_img(course_id, &data, "/public/uploads").await?;
+
+			let body = Json(json!({
+				"result": {
+					"img_url": img_url,
+				}
+			}));
+
+			return Ok(body);
+        }
+    }
+
+	let body = Json(json!({
+		"result": {
+			"error": "file error"
+		}
+	}));
+
+    Ok(body)
+}
+
+#[utoipa::path(
+	put,
+	path = "/api/course/register_for_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_register_for_course_handler(
+	ctx: CtxW,
+	State(dbm): State<DbManager>,
+	Json(course_id): Json<CourseId>
+) -> AppResult<Json<Value>> {
+	let ctx = ctx.0;
+	let course_id = course_id.course_id;
+
+	let repository = CourseCommandRepository::new(dbm);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
+
+	course_interactor.register_for_course(course_id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+	Ok(body)
+}
+
+#[utoipa::path(
+	put,
+	path = "/api/course/unsubscribe_from_course",
+	request_body = CourseId,
+	responses(
+		(status = 200),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_unsubscribe_from_course_handler(
+	ctx: CtxW,
+	State(dbm): State<DbManager>,
+	Json(course_id): Json<CourseId>
+) -> AppResult<Json<Value>> {
+	let ctx = ctx.0;
+	let course_id = course_id.course_id;
+
+	let repository = CourseCommandRepository::new(dbm);
+	let course_interactor = CourseInteractor::new(&ctx, &repository);
+
+	course_interactor.unsubscribe_from_course(course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -198,7 +374,7 @@ impl From<CourseQuery> for CoursePayload {
 
 #[utoipa::path(
 	get,
-	path = "/api/get_course/{course_id}",
+	path = "/api/course/get_course/{course_id}",
 	params(
 		("course_id", description = "ID of the course")
 	),
@@ -209,7 +385,7 @@ impl From<CourseQuery> for CoursePayload {
 		("bearerAuth" = [])
 	)
 )]
-async fn api_get_course(
+async fn api_get_course_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
 	Path(course_id): Path<i64>,
@@ -231,7 +407,7 @@ pub struct CourseFilterPayload {
 
 #[utoipa::path(
 	post,
-	path = "/api/get_courses/",
+	path = "/api/course/get_courses/",
 	request_body = CourseFilterPayload,
 	// params(
 	// 	("filter_payload", description = 
@@ -248,7 +424,7 @@ pub struct CourseFilterPayload {
 		("bearerAuth" = [])
 	)
 )]
-async fn api_get_courses(
+async fn api_get_courses_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
 	Json(filter_payload): Json<CourseFilterPayload>,
@@ -274,123 +450,47 @@ async fn api_get_courses(
 }
 
 #[utoipa::path(
-	post,
-	path = "/api/set_course_img/{course_id}",
-	params(
-		("course_id", description = "ID of the course for which we set an avatar")
-	),
-	request_body(content_type = "multipart/formdata", content = Vec<u8>),
+	get,
+	path = "/api/course/get_user_courses_created/",
 	responses(
-		(status = 200, description = "Course image successfully set"),
+		(status = 200, body=Vec<CoursePayload>),
 	),
 	security(
 		("bearerAuth" = [])
 	)
 )]
-#[debug_handler]
-async fn api_set_course_img_handler(
+async fn api_get_user_courses_created_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
-	Path(course_id): Path<i64>,
-	mut multipart: Multipart,
-) -> AppResult<Json<Value>> {
+) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
+	let user_id = ctx.user_id();
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
+	let courses: Vec<CourseQuery> = CourseQueryRepository::get_user_courses_created(&ctx, &dbm, user_id).await?;
+	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
-    while let Some(field) = multipart.next_field().await? {
-        let field_name = if let Some(field_name) = field.name() {
-			field_name.to_string()
-		} else {
-			continue;
-		};
-		
-        if field_name == "image" {
-            let data = field.bytes().await?;
-			let img_url = course_controller.set_course_img(course_id, &data, "/public/uploads").await?;
-
-			let body = Json(json!({
-				"result": {
-					"img_url": img_url,
-				}
-			}));
-
-			return Ok(body);
-        }
-    }
-
-	let body = Json(json!({
-		"result": {
-			"error": "file error"
-		}
-	}));
-
-    Ok(body)
+	Ok(Json(body))
 }
 
 #[utoipa::path(
-	post,
-	path = "/api/register_for_course",
-	request_body = CourseId,
+	get,
+	path = "/api/course/get_user_courses_registered/",
 	responses(
-		(status = 200),
+		(status = 200, body=Vec<CoursePayload>),
 	),
 	security(
 		("bearerAuth" = [])
 	)
 )]
-async fn api_register_for_course(
+async fn api_get_user_courses_registered_handler(
 	ctx: CtxW,
 	State(dbm): State<DbManager>,
-	Json(course_id): Json<CourseId>
-) -> AppResult<Json<Value>> {
+) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
-	let course_id = course_id.course_id;
+	let user_id = ctx.user_id();
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
+	let courses: Vec<CourseQuery> = CourseQueryRepository::get_user_courses_registered(&ctx, &dbm, user_id).await?;
+	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
-	course_controller.register_for_course(course_id).await?;
-
-	let body = Json(json!({
-		"result": {
-			"success": true,
-		}
-	}));
-
-	Ok(body)
-}
-
-#[utoipa::path(
-	post,
-	path = "/api/unsubscribe_from_course",
-	request_body = CourseId,
-	responses(
-		(status = 200),
-	),
-	security(
-		("bearerAuth" = [])
-	)
-)]
-async fn api_unsubscribe_from_course(
-	ctx: CtxW,
-	State(dbm): State<DbManager>,
-	Json(course_id): Json<CourseId>
-) -> AppResult<Json<Value>> {
-	let ctx = ctx.0;
-	let course_id = course_id.course_id;
-
-	let repository = CourseCommandRepository::new(dbm);
-	let course_controller = CourseController::new(&ctx, &repository);
-
-	course_controller.unsubscribe_from_course(course_id).await?;
-
-	let body = Json(json!({
-		"result": {
-			"success": true,
-		}
-	}));
-
-	Ok(body)
+	Ok(Json(body))
 }

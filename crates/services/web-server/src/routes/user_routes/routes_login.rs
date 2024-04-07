@@ -4,7 +4,7 @@ use axum::{Json, Router};
 use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
-use lib_core::core::user::UserController;
+use lib_core::core::user::UserInteractor;
 use lib_core::ctx::Ctx;
 use lib_db::command_repository::user::UserCommandRepository;
 use lib_db::query_repository::user::{UserData, UserQueryRepository};
@@ -24,7 +24,6 @@ pub fn routes(dbm: DbManager) -> Router {
 		.with_state(dbm)
 }
 
-// region:    --- Login
 #[utoipa::path(
 	post,
 	path = "/api/login",
@@ -44,7 +43,6 @@ async fn api_login_handler(
 
 	let root_ctx = Ctx::root_ctx();
 
-	// -- Get the user.
 	let user: UserData = UserQueryRepository::first_by_username(&root_ctx, &dbm, &username)
 		.await?
 		.ok_or(AppError::LoginFailUsernameNotFound)?;
@@ -75,14 +73,13 @@ async fn api_login_handler(
 	if let SchemeStatus::Outdated = scheme_status {
 		debug!("pwd encrypt scheme outdated, upgrading.");
 		let repository = UserCommandRepository::new(dbm);
-		let user_countroller = UserController::new(&root_ctx, &repository);
+		let user_countroller = UserInteractor::new(&root_ctx, &repository);
 		user_countroller.update_pwd(user.id, &pwd_clear).await?;
 	}
 
 	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
 	let refresh_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Refresh)?;
 
-	// Create the success body.
 	let body = Json(json!({
 		"result": {
 			"access_token": access_token.to_string(),
@@ -92,9 +89,6 @@ async fn api_login_handler(
 
 	Ok(body)
 }
-// endregion: --- Login
-
-// region:    --- Refresh token
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct RefreshTokenPayload {
@@ -117,14 +111,12 @@ async fn api_refresh_access_token_handler(
 ) -> AppResult<Json<Value>> {
 	let refresh_token: Token = payload.refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
-	// -- Get UserForAuth
 	let user: UserData =
 		UserQueryRepository::first_by_username(&Ctx::root_ctx(), &dbm, &refresh_token.ident)
 			.await
 			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
 			.ok_or(CtxExtError::UserNotFound)?;
 
-	// -- Validate Token
 	validate_web_token(&refresh_token, user.token_salt)
 		.map_err(|_| CtxExtError::FailValidate)?;
 
@@ -140,4 +132,3 @@ async fn api_refresh_access_token_handler(
 
 	Ok(body)
 }
-// endregion  --- Refresh token

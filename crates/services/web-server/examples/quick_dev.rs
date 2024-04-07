@@ -1,7 +1,7 @@
-#![allow(unused)] // For example code.
+#![allow(unused)]
 
 pub type Result<T> = core::result::Result<T, Error>;
-pub type Error = Box<dyn std::error::Error>; // For examples.
+pub type Error = Box<dyn std::error::Error>; 
 
 use serde_json::{json, Value};
 

@@ -14,7 +14,8 @@ use error::AppResult;
 use crate::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::middleware::mw_req_stamp::mw_req_stamp_resolver;
 use crate::middleware::mw_res_map::mw_reponse_map;
-use crate::routes::{routes_login, routes_register, routes_static, routes_course};
+use crate::routes::{routes_static, routes_course};
+use crate::routes::user_routes::{routes_login, routes_register, routes_user};
 use axum::{middleware as axum_middleware, Router};
 use tokio::net::TcpListener;
 use tracing::info;
@@ -31,25 +32,45 @@ async fn main() -> AppResult<()> {
 	#[derive(OpenApi)]
     #[openapi(
         paths(
+			// User
+			routes_user::api_get_user_data_handler,
+			routes_user::api_get_user_by_id_handler,
+
+			routes_user::api_update_user_handler,
+			routes_user::api_change_pwd_handler,
 			routes_login::api_login_handler,
 			routes_login::api_refresh_access_token_handler,
 			routes_register::api_register_handler,
+ 
+			// Course
 			routes_course::api_set_course_img_handler,
-			routes_course::api_create_course_draft,
-			routes_course::api_publish_course,
-			routes_course::api_archive_course,
-			routes_course::api_register_for_course,
-			routes_course::api_unsubscribe_from_course,
-			routes_course::api_get_course,
-			routes_course::api_get_courses,
+			routes_course::api_create_course_draft_handler,
+			routes_course::api_update_course_handler,
+			routes_course::api_publish_course_handler,
+			routes_course::api_archive_course_handler,
+			routes_course::api_register_for_course_handler,
+			routes_course::api_unsubscribe_from_course_handler,
+
+			routes_course::api_get_course_handler,
+			routes_course::api_get_courses_handler,
+			routes_course::api_get_user_courses_created_handler,
+			routes_course::api_get_user_courses_registered_handler,
         ),
         components(
 			schemas(
+				// User
+				routes_user::UserDataPayload,
+				routes_user::UserUpdatePayload,
+				routes_user::UserChangePwdPayload,
 				routes_register::RegisterPayload,
 				routes_login::RefreshTokenPayload,
+
+				// Course
 				routes_course::CourseCreateDraftPayload,
+				routes_course::CourseUpdatePayload,
 				routes_course::CreatedCourseDraft,
 				routes_course::CoursePayload,
+				routes_course::CourseStatePayload,
 				routes_course::CourseId,
 				routes_course::CourseFilterPayload,
 			)
@@ -90,16 +111,20 @@ async fn main() -> AppResult<()> {
 
 	let dbm = DbManager::new().await?;
 
-	let routes_course = routes::routes_course::routes(dbm.clone())
-		.route_layer(axum_middleware::from_fn(mw_ctx_require));
-
 	let cors = CorsLayer::new()
 		.allow_methods(Any)
 		.allow_headers(Any)
 		.allow_origin(Any);
 
+	let routes_course = routes::routes_course::routes(dbm.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_user = routes::user_routes::routes_user::routes(dbm.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
 	let routes_all = Router::new()
-		.nest("/api", routes_course)
+		.nest("/api/course", routes_course)
+		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
 		.merge(routes_login::routes(dbm.clone()))
 		.merge(routes_register::routes(dbm.clone()))

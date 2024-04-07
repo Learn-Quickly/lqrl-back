@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::post, Json, Router};
-use lib_core::{core::user::UserController, ctx::Ctx};
+use lib_core::{core::user::UserInteractor, ctx::Ctx};
 use lib_db::{command_repository::user::UserCommandRepository, store::DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -36,8 +36,8 @@ async fn api_register_handler(
     let ctx = Ctx::root_ctx();
 
 	let repository = UserCommandRepository::new(dbm);
-	let user_controller = UserController::new(&ctx, &repository);
-    user_controller.create_user(payload.pwd, payload.username).await?;
+	let user_interactor = UserInteractor::new(&ctx, &repository);
+    user_interactor.create_user(payload.pwd, payload.username).await?;
 
 	let body = Json(json!({
 		"result": {
