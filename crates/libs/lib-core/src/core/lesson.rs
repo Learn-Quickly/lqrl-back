@@ -286,6 +286,50 @@ mod tests {
                     order: 2,
                 },
             },
+            TestData {
+                lessons: vec![
+                    Lesson { id: 3, course_id, titile: "Lesson 3".to_string(), lesson_order: 1 },
+                    Lesson { id: 5, course_id, titile: "Lesson 5".to_string(), lesson_order: 2 },
+                    Lesson { id: 1, course_id, titile: "Lesson 1".to_string(), lesson_order: 3 },
+                    Lesson { id: 10, course_id, titile: "Lesson 10".to_string(), lesson_order: 4 },
+                    Lesson { id: 16, course_id, titile: "Lesson 16".to_string(), lesson_order: 5 },
+                    Lesson { id: 9, course_id, titile: "Lesson 9".to_string(), lesson_order: 6 },
+                ], 
+                result: vec![
+                    LessonForChangeOreder { id: 5, order: 1 },
+                    LessonForChangeOreder { id: 1, order: 2 },
+                    LessonForChangeOreder { id: 10, order: 3 },
+                    LessonForChangeOreder { id: 16, order: 4 },
+                    LessonForChangeOreder { id: 9, order: 5 },
+                    LessonForChangeOreder { id: 3, order: 6 },
+                ],
+                lesson_for_u_order: LessonForChangeOreder { 
+                    id: 3, 
+                    order: 6,
+                },
+            },
+            TestData {
+                lessons: vec![
+                    Lesson { id: 3, course_id, titile: "Lesson 3".to_string(), lesson_order: 1 },
+                    Lesson { id: 5, course_id, titile: "Lesson 5".to_string(), lesson_order: 2 },
+                    Lesson { id: 1, course_id, titile: "Lesson 1".to_string(), lesson_order: 3 },
+                    Lesson { id: 10, course_id, titile: "Lesson 10".to_string(), lesson_order: 4 },
+                    Lesson { id: 16, course_id, titile: "Lesson 16".to_string(), lesson_order: 5 },
+                    Lesson { id: 9, course_id, titile: "Lesson 9".to_string(), lesson_order: 6 },
+                ], 
+                result: vec![
+                    LessonForChangeOreder { id: 9, order: 1 },
+                    LessonForChangeOreder { id: 3, order: 2 },
+                    LessonForChangeOreder { id: 5, order: 3 },
+                    LessonForChangeOreder { id: 1, order: 4 },
+                    LessonForChangeOreder { id: 10, order: 5 },
+                    LessonForChangeOreder { id: 16, order: 6 },
+                ],
+                lesson_for_u_order: LessonForChangeOreder { 
+                    id: 9, 
+                    order: 1,
+                },
+            }
         ];
 
         for test_data in data {

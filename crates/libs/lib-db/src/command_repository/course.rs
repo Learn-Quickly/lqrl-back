@@ -153,9 +153,9 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		course_c: CourseForCreate,
 	) -> CourseResult<i64> {
 		let dbm = self.dbm.new_with_txn()?;
+		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
 
 		let title = course_c.title.clone();
-		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
 
 		let course_req_c = CourseRequest::builder()
 			.title(course_c.title)

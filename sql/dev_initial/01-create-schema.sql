@@ -46,7 +46,7 @@ CREATE TYPE user_course_roles AS ENUM ('Student', 'Creator');
 CREATE TABLE users_courses (
   user_id BIGINT NOT NULL,
   course_id BIGINT NOT NULL,
-  user_role user_course_roles NOT NULL default 'Student',
+  user_role varchar(256) NOT NULL default 'Student',
 
   PRIMARY KEY (user_id, course_id),
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE,

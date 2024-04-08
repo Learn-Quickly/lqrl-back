@@ -19,21 +19,30 @@ pub enum UserCourseRoleQuery {
     Creator,
 }
 
-impl From<UserCourseRoleQuery> for sea_query::Value {
-	fn from(value: UserCourseRoleQuery) -> Self {
-		value.to_string().into()
+impl From<String> for UserCourseRoleQuery {
+	fn from(value: String) -> Self {
+		match value.as_str() {
+			"Creator" => Self::Creator,
+			_ => Self::Student,
+		}
 	}
 }
 
+impl From<UserCourseRoleQuery> for sea_query::Value {
+	fn from(value: UserCourseRoleQuery) -> Self {
+		match value {
+			UserCourseRoleQuery::Student => "Student".into(),
+			UserCourseRoleQuery::Creator => "Creator".into(),
+		}
+	}
+}
 
 #[derive(Fields, FromRow)]
 pub struct UsersCoursesQuery {
     pub user_id: i64,
     pub course_id: i64,
-	#[field(cast_as = "user_course_roles")]
-    pub user_role: UserCourseRoleQuery,
+    pub user_role: String,
 }
-
 
 pub struct UsersCoursesQueryRepository;
 
@@ -52,11 +61,12 @@ impl UsersCoursesQueryRepository {
         user_role: UserCourseRoleQuery,
     ) -> DbResult<Vec<UsersCoursesQuery>> {
 		let mut query = Query::select();
+		
 		query
 			.from(Self::table_ref())
 			.columns(UsersCoursesQuery::field_column_refs())
 			.and_where(Expr::col(UserCourseIden::UserId).eq(user_id))
-			.and_where(Expr::col(UserCourseIden::UserRole).eq(user_role));
+			.and_where(Expr::col(UserCourseIden::UserRole).eq(user_role.to_string()));
 
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_as_with::<_, UsersCoursesQuery, _>(&sql, values);

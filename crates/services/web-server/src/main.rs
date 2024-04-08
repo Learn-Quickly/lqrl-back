@@ -14,7 +14,7 @@ use error::AppResult;
 use crate::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::middleware::mw_req_stamp::mw_req_stamp_resolver;
 use crate::middleware::mw_res_map::mw_reponse_map;
-use crate::routes::{routes_static, routes_course};
+use crate::routes::{routes_static, routes_course, routes_lesson};
 use crate::routes::user_routes::{routes_login, routes_register, routes_user};
 use axum::{middleware as axum_middleware, Router};
 use tokio::net::TcpListener;
@@ -55,6 +55,9 @@ async fn main() -> AppResult<()> {
 			routes_course::api_get_courses_handler,
 			routes_course::api_get_user_courses_created_handler,
 			routes_course::api_get_user_courses_registered_handler,
+
+			// Lesson
+			routes_lesson::api_create_lesson_handler,
         ),
         components(
 			schemas(
@@ -67,12 +70,16 @@ async fn main() -> AppResult<()> {
 
 				// Course
 				routes_course::CourseCreateDraftPayload,
-				routes_course::CourseUpdatePayload,
 				routes_course::CreatedCourseDraft,
+				routes_course::CourseUpdatePayload,
 				routes_course::CoursePayload,
 				routes_course::CourseStatePayload,
 				routes_course::CourseId,
 				routes_course::CourseFilterPayload,
+
+				// Lesson
+				routes_lesson::CreatedLessonPayload,
+				routes_lesson::LessonCreatePayload,
 			)
         ),
         modifiers(&SecurityAddon),
@@ -116,14 +123,18 @@ async fn main() -> AppResult<()> {
 		.allow_headers(Any)
 		.allow_origin(Any);
 
+	let routes_user = routes::user_routes::routes_user::routes(dbm.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
 	let routes_course = routes::routes_course::routes(dbm.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
-	let routes_user = routes::user_routes::routes_user::routes(dbm.clone())
+	let routes_lesson = routes::routes_lesson::routes(dbm.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
 	let routes_all = Router::new()
 		.nest("/api/course", routes_course)
+		.nest("/api/course/lesson", routes_lesson)
 		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(dbm.clone(), mw_ctx_resolver))
 		.merge(routes_login::routes(dbm.clone()))
