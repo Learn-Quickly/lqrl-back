@@ -2,110 +2,30 @@ mod config;
 mod error;
 mod middleware;
 mod routes;
+mod api_doc;
 
 use config::web_config;
 use lib_db::_dev_utils;
 use lib_db::store::DbManager;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
-use utoipa::openapi::security::Http;
 use error::AppResult;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
+use crate::api_doc::ApiDoc;
 use crate::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::middleware::mw_req_stamp::mw_req_stamp_resolver;
 use crate::middleware::mw_res_map::mw_reponse_map;
-use crate::routes::{routes_static, routes_course, routes_lesson};
-use crate::routes::user_routes::{routes_login, routes_register, routes_user};
+use crate::routes::routes_static;
+use crate::routes::user_routes::{routes_login, routes_register};
 use axum::{middleware as axum_middleware, Router};
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use utoipa::{
-	openapi::security::SecurityScheme,
-	Modify, OpenApi,
-};
-
-use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
-async fn main() -> AppResult<()> {
-	#[derive(OpenApi)]
-    #[openapi(
-        paths(
-			// User
-			routes_user::api_get_user_data_handler,
-			routes_user::api_get_user_by_id_handler,
-
-			routes_user::api_update_user_handler,
-			routes_user::api_change_pwd_handler,
-			routes_login::api_login_handler,
-			routes_login::api_refresh_access_token_handler,
-			routes_register::api_register_handler,
- 
-			// Course
-			routes_course::api_set_course_img_handler,
-			routes_course::api_create_course_draft_handler,
-			routes_course::api_update_course_handler,
-			routes_course::api_publish_course_handler,
-			routes_course::api_archive_course_handler,
-			routes_course::api_register_for_course_handler,
-			routes_course::api_unsubscribe_from_course_handler,
-
-			routes_course::api_get_course_handler,
-			routes_course::api_get_courses_handler,
-			routes_course::api_get_user_courses_created_handler,
-			routes_course::api_get_user_courses_registered_handler,
-
-			// Lesson
-			routes_lesson::api_create_lesson_handler,
-        ),
-        components(
-			schemas(
-				// User
-				routes_user::UserDataPayload,
-				routes_user::UserUpdatePayload,
-				routes_user::UserChangePwdPayload,
-				routes_register::RegisterPayload,
-				routes_login::RefreshTokenPayload,
-
-				// Course
-				routes_course::CourseCreateDraftPayload,
-				routes_course::CreatedCourseDraft,
-				routes_course::CourseUpdatePayload,
-				routes_course::CoursePayload,
-				routes_course::CourseStatePayload,
-				routes_course::CourseId,
-				routes_course::CourseFilterPayload,
-
-				// Lesson
-				routes_lesson::CreatedLessonPayload,
-				routes_lesson::LessonCreatePayload,
-			)
-        ),
-        modifiers(&SecurityAddon),
-        tags(
-            (name = "LQRL", description = "A great Rust backend API for the awesome LQRL project")
-        )
-    )]
-    struct ApiDoc;
-
-    struct SecurityAddon;
-
-    impl Modify for SecurityAddon {
-        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-            if let Some(components) = openapi.components.as_mut() {
-                components.add_security_scheme(
-                    "bearerAuth",
-                    SecurityScheme::Http(Http::new(utoipa::openapi::security::HttpAuthScheme::Bearer)),
-                );
-				components.add_security_scheme(
-					"basicAuth",
-					SecurityScheme::Http(Http::new(utoipa::openapi::security::HttpAuthScheme::Basic))
-				)
-            }
-        }
-    }
-	
+async fn main() -> AppResult<()> {	
 	tracing_subscriber::fmt()
 		.without_time() // For early local development.
 		.with_target(false)
