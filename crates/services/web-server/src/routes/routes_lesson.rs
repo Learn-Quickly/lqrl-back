@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::{post, put}, Json, Router};
+use axum::{extract::State, routing::{delete, post, put}, Json, Router};
 use lib_core::{core::lesson::LessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
 use lib_db::{command_repository::lesson::LessonCommandRepository, store::DbManager};
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ use crate::{error::AppResult, middleware::mw_auth::CtxW};
 pub fn routes(dbm: DbManager) -> Router {
 	Router::new()
 		.route("/create", post(api_create_lesson_handler))
+		.route("/delete", delete(api_delete_lesson_handler))
 		.route("/update", put(api_update_lesson_handler))
 		.route("/change_order", put(api_lesson_change_order_handler))
 		.with_state(dbm)
@@ -59,6 +60,43 @@ async fn api_create_lesson_handler(
     };
 
     let body = Json(created_lesson);
+
+    Ok(body)
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct LessonDeletePayload {
+	pub lesson_id: i64,
+}
+
+#[utoipa::path(
+	delete,
+	path = "/api/course/lesson/delete",
+	request_body = LessonDeletePayload,
+	responses(
+		(status = 200, description = "Lesson deleted successfully"),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_delete_lesson_handler(
+    ctx: CtxW,
+	State(dbm): State<DbManager>,
+	Json(paylod): Json<LessonDeletePayload>,
+) -> AppResult<Json<Value>> {
+    let ctx = ctx.0;
+
+	let repository = LessonCommandRepository::new(dbm);
+	let lesson_interactor = LessonInteractor::new(&ctx, &repository);
+
+    lesson_interactor.delete_lesson(paylod.lesson_id).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
 
     Ok(body)
 }

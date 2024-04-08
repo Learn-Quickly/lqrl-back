@@ -32,6 +32,10 @@ impl<'a> LessonInteractor<'a> {
         self.repository.create_lesson(&self.ctx, lesson_for_c).await
     }
 
+    pub async fn delete_lesson(&self, lesson_id: i64) -> LessonResult<()> {
+        self.repository.delete_lesson(&self.ctx, lesson_id).await
+    }
+
     pub async fn update_lesson(&self, lesson_for_u: LessonForUpdate) -> LessonResult<()> {
         self.repository.update_lesson(&self.ctx, lesson_for_u).await
     }
@@ -188,6 +192,10 @@ mod tests {
         }
 
         async fn create_lesson(&self, _: &Ctx, _: LessonForCreateCommand) -> LessonResult<i64> {
+            panic!()
+        }
+
+        async fn delete_lesson(&self, _: &Ctx, _: i64) -> LessonResult<()> {
             panic!()
         }
 

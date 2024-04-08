@@ -38,6 +38,7 @@ use crate::routes::{routes_course, routes_lesson};
 		routes_lesson::api_create_lesson_handler,
 		routes_lesson::api_update_lesson_handler,
 		routes_lesson::api_lesson_change_order_handler,
+        routes_lesson::api_delete_lesson_handler,
     ),
     components(
 		schemas(
@@ -60,6 +61,7 @@ use crate::routes::{routes_course, routes_lesson};
 			// Lesson
 			routes_lesson::LessonCreatedPayload,
 			routes_lesson::LessonCreatePayload,
+            routes_lesson::LessonDeletePayload,
 			routes_lesson::LessonUpdatePayload,
 			routes_lesson::LessonChangeOrderPayload,
 		)

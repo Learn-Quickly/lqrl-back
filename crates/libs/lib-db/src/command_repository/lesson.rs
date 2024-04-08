@@ -125,6 +125,14 @@ impl ILessonCommandRepository for LessonCommandRepository {
         Ok(lesson_id)
     }
 
+    async fn delete_lesson(&self, ctx: &Ctx, lesson_id: i64) -> LessonResult<()> {
+        base::delete::<Self>(ctx, &self.dbm, lesson_id)
+            .await
+            .map_err(Into::<DbError>::into)?;
+
+        Ok(())
+    }
+
     async fn update_lesson(
         &self,
         ctx: &Ctx, 

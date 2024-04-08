@@ -29,6 +29,8 @@ impl<'a> CourseInteractor<'a> {
         course_for_u: CourseForUpdate,
         course_id: i64,
     ) -> CourseResult<()> {
+        self.check_permission(course_id).await?;
+
         let command = CourseForUpdateCommand {
             title: course_for_u.title,
             description: course_for_u.description,
@@ -43,17 +45,31 @@ impl<'a> CourseInteractor<'a> {
         self.repository.update_course(&self.ctx, command, course_id).await
     }
 
+    pub async fn check_permission(&self, course_id: i64) -> CourseResult<()> {
+        let user_id = self.ctx.user_id();
+
+        // admin
+        if user_id == 0 {
+            return Ok(());
+        }
+
+        let user_course = self.repository.get_user_course(&self.ctx, self.ctx.user_id(), course_id).await?;
+        if !user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
+            return Err(CoreError::PermissionDenied);
+        }
+
+        Ok(())
+    }
+
     pub async fn set_course_img(
         &self,
         course_id: i64,
         file_data: &[u8],
         file_path: &str,
     ) -> CourseResult<String> {
+        self.check_permission(course_id).await?;
+
         let course = self.repository.get_course(&self.ctx, course_id).await?;
-        let user_course = self.repository.get_user_course(&self.ctx, self.ctx.user_id(), course_id).await?;
-        if !user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
-            return Err(CoreError::PermissionDenied);
-        }
 
         let new_img_url = upload_file(file_path, file_data).await?;
 
@@ -76,6 +92,8 @@ impl<'a> CourseInteractor<'a> {
         &self, 
         course_id: i64,
     ) -> CourseResult<()> {
+        self.check_permission(course_id).await?;
+
         let command = CourseForUpdateCommand::builder()
             .state(crate::model::course::CourseState::Published)
             .build();
@@ -87,6 +105,8 @@ impl<'a> CourseInteractor<'a> {
         &self,
         course_id: i64,
     ) -> CourseResult<()> {
+        self.check_permission(course_id).await?;
+
         let command = CourseForUpdateCommand::builder()
             .state(crate::model::course::CourseState::Archived)
             .build();

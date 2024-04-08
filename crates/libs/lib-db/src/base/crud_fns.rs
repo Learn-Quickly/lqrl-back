@@ -131,28 +131,28 @@ where
 	}
 }
 
-// pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbxResult<()>
-// where
-// 	MC: DbRepository,
-// {
-// 	let mut query = Query::delete();
-// 	query
-// 		.from_table(MC::table_ref())
-// 		.and_where(Expr::col(CommonIden::Id).eq(id));
+pub async fn delete<MC>(_ctx: &Ctx, dbm: &DbManager, id: i64) -> DbxResult<()>
+where
+	MC: DbRepository,
+{
+	let mut query = Query::delete();
+	query
+		.from_table(MC::table_ref())
+		.and_where(Expr::col(CommonIden::Id).eq(id));
 
-// 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-// 	let sqlx_query = sqlx::query_with(&sql, values);
-// 	let count = dbm.dbx().execute(sqlx_query).await?;
+	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+	let sqlx_query = sqlx::query_with(&sql, values);
+	let count = dbm.dbx().execute(sqlx_query).await?;
 
-// 	if count == 0 {
-// 		Err(DbxError::DbError(DbError::EntityNotFound {
-// 			entity: MC::TABLE.to_string(),
-// 			id,
-// 		}))
-// 	} else {
-// 		Ok(())
-// 	}
-// }
+	if count == 0 {
+		Err(DbxError::DbError(DbError::EntityNotFound {
+			entity: MC::TABLE.to_string(),
+			id,
+		}))
+	} else {
+		Ok(())
+	}
+}
 
 pub fn compute_list_options(
 	list_options: Option<ListOptions>,
