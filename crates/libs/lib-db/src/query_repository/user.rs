@@ -1,13 +1,13 @@
 use lib_core::ctx::Ctx;
 use modql::{field::{Fields, HasFields}, filter::{FilterNodes, ListOptions, OpValsInt64, OpValsString, OpValsValue}};
 use uuid::Uuid;
-use crate::query_repository::modql_utils::time_to_sea_value;
+use crate::{query_repository::modql_utils::time_to_sea_value, store::db_manager::DbManager};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{postgres::PgRow, FromRow};
 
-use crate::{base::{self, DbRepository}, store::{error::{DbError, DbResult}, DbManager}};
+use crate::{base::{self, DbRepository}, store::error::{DbError, DbResult}};
 
 #[derive(Clone, Fields, FromRow, Debug)]
 pub struct UserData {
@@ -42,7 +42,18 @@ enum UserIden {
 	Username,
 }
 
-pub struct UserQueryRepository;
+#[derive(Clone)]
+pub struct UserQueryRepository {
+	dbm: DbManager,
+} 
+
+impl UserQueryRepository {
+	pub fn new(dbm: DbManager) -> Self {
+		Self {
+    		dbm,
+		}
+	}
+}
 
 impl DbRepository for UserQueryRepository {
     const TABLE: &'static str = "user";
@@ -50,8 +61,8 @@ impl DbRepository for UserQueryRepository {
 
 impl UserQueryRepository {
 	pub async fn first_by_username<E>(
+		&self,
 		_ctx: &Ctx,
-		dbm: &DbManager,
 		username: &str,
 	) -> DbResult<Option<E>>
 	where
@@ -68,24 +79,26 @@ impl UserQueryRepository {
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
 		let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-		let entity = dbm.dbx().fetch_optional(sqlx_query).await?;
+		let entity = self.dbm.dbx().fetch_optional(sqlx_query).await?;
 
 		Ok(entity)
 	}
 
-	pub async fn get<E>(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<E>
+	pub async fn get<E>(&self, ctx: &Ctx, id: i64) -> DbResult<E>
 	where
 		E: UserBy,
 	{
-		base::get::<Self, _>(ctx, dbm, id).await.map_err(Into::<DbError>::into)
+		base::get::<Self, _>(ctx, &self.dbm, id).await.map_err(Into::<DbError>::into)
 	}
 
 	pub async fn list(
+		&self,
 		ctx: &Ctx,
-		dbm: &DbManager,
 		filter: Option<Vec<UserFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<UserData>> {
-		base::list::<Self, _, _>(ctx, dbm, filter, list_options).await.map_err(Into::<DbError>::into)
+		base::list::<Self, _, _>(ctx, &self.dbm, filter, list_options)
+			.await
+			.map_err(Into::<DbError>::into)
 	}
 }

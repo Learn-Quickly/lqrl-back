@@ -1,19 +1,18 @@
 use axum::{extract::State, routing::{delete, post, put}, Json, Router};
 use lib_core::{core::lesson::LessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
-use lib_db::{command_repository::lesson::LessonCommandRepository, store::DbManager};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use utoipa::ToSchema;
 
-use crate::{error::AppResult, middleware::mw_auth::CtxW};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW};
 
-pub fn routes(dbm: DbManager) -> Router {
+pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/create", post(api_create_lesson_handler))
 		.route("/delete", delete(api_delete_lesson_handler))
 		.route("/update", put(api_update_lesson_handler))
 		.route("/change_order", put(api_lesson_change_order_handler))
-		.with_state(dbm)
+		.with_state(app_state)
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -24,7 +23,7 @@ pub struct LessonCreatedPayload {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct LessonCreatePayload {
     pub course_id: i64,
-    pub titile: String,
+    pub title: String,
 }
 
 #[utoipa::path(
@@ -40,20 +39,20 @@ pub struct LessonCreatePayload {
 )]
 async fn api_create_lesson_handler(
     ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(paylod): Json<LessonCreatePayload>,
 ) -> AppResult<Json<LessonCreatedPayload>> {
     let ctx = ctx.0;
 
     let lesson_c = LessonForCreate {
         course_id: paylod.course_id,
-        titile: paylod.titile,
+        title: paylod.title,
     };
 
-	let repository = LessonCommandRepository::new(dbm);
-	let lesson_interactor = LessonInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let lesson_interactor = LessonInteractor::new(command_repository_manager);
 
-    let lesson_id = lesson_interactor.create_lesson(lesson_c).await?;
+    let lesson_id = lesson_interactor.create_lesson(&ctx, lesson_c).await?;
 
     let created_lesson = LessonCreatedPayload {
         lesson_id,
@@ -82,15 +81,15 @@ pub struct LessonDeletePayload {
 )]
 async fn api_delete_lesson_handler(
     ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(paylod): Json<LessonDeletePayload>,
 ) -> AppResult<Json<Value>> {
     let ctx = ctx.0;
 
-	let repository = LessonCommandRepository::new(dbm);
-	let lesson_interactor = LessonInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let lesson_interactor = LessonInteractor::new(command_repository_manager);
 
-    lesson_interactor.delete_lesson(paylod.lesson_id).await?;
+    lesson_interactor.delete_lesson(&ctx, paylod.lesson_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -104,7 +103,7 @@ async fn api_delete_lesson_handler(
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct LessonUpdatePayload {
     pub lesson_id: i64,
-    pub titile: String,
+    pub title: String,
 }
 
 #[utoipa::path(
@@ -120,20 +119,20 @@ pub struct LessonUpdatePayload {
 )]
 async fn api_update_lesson_handler(
     ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(paylod): Json<LessonUpdatePayload>,
 ) -> AppResult<Json<Value>> {
     let ctx = ctx.0;
 
     let lesson_u = LessonForUpdate {
         id: paylod.lesson_id,
-        titile: paylod.titile,
+        title: paylod.title,
     };
 
-	let repository = LessonCommandRepository::new(dbm);
-	let lesson_interactor = LessonInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let lesson_interactor = LessonInteractor::new(command_repository_manager);
 
-    lesson_interactor.update_lesson(lesson_u).await?;
+    lesson_interactor.update_lesson(&ctx, lesson_u).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -163,7 +162,7 @@ pub struct LessonChangeOrderPayload {
 )]
 async fn api_lesson_change_order_handler(
     ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(paylod): Json<LessonChangeOrderPayload>,
 ) -> AppResult<Json<Value>> {
     let ctx = ctx.0;
@@ -173,10 +172,10 @@ async fn api_lesson_change_order_handler(
 		order: paylod.order,
     };
 
-	let repository = LessonCommandRepository::new(dbm);
-	let lesson_interactor = LessonInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let lesson_interactor = LessonInteractor::new(command_repository_manager);
 
-    lesson_interactor.change_order(lesson_c_o).await?;
+    lesson_interactor.change_order(&ctx, lesson_c_o).await?;
 
 	let body = Json(json!({
 		"result": {

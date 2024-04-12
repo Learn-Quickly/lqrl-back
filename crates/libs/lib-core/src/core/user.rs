@@ -3,9 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     ctx::Ctx,
-    interfaces::user::{
-        IUserCommandRepository, UserResult
-    },
+    interfaces::{command_repository_manager::ICommandRepositoryManager, user::UserResult},
     model::user::{
         UserForChangePassword,
         UserForCreate,
@@ -16,21 +14,24 @@ use crate::{
 use super::error::UserError;
 
 pub struct UserInteractor<'a> {
-    ctx: &'a Ctx,
-    repository: &'a (dyn IUserCommandRepository + Send + Sync),
+    repository_manager: &'a (dyn ICommandRepositoryManager + Send + Sync),
 }
 
 impl<'a> UserInteractor<'a> {
-    pub fn new(ctx: &'a Ctx, repository: &'a (impl IUserCommandRepository + Send + Sync)) -> Self {
+    pub fn new(repository_manager: &'a (dyn ICommandRepositoryManager + Send + Sync)) -> Self {
         Self {
-            ctx,
-            repository,
+            repository_manager,
         }
     }
 }
 
 impl<'a> UserInteractor<'a> {
-    pub async fn create_user(&self, pwd_clear: String, username: String) -> UserResult<i64> {
+    pub async fn create_user(
+        &self,
+        ctx: &Ctx,
+        pwd_clear: String,
+        username: String
+    ) -> UserResult<i64> {
         let pwd_salt = Uuid::new_v4();
         let token_salt = Uuid::new_v4();
 
@@ -48,16 +49,27 @@ impl<'a> UserInteractor<'a> {
             token_salt,
         };
 
-        self.repository.create_user(&self.ctx, user_for_c).await
+        let user_repository = self.repository_manager.get_user_repository();
+        user_repository.create_user(ctx, user_for_c).await
     }
 
-    pub async fn update_user(&self, user_for_u: UserForUpdate) -> UserResult<()> {
-        self.repository.update_user(&self.ctx, user_for_u).await
+    pub async fn update_user(
+        &self,
+        ctx: &Ctx,
+        user_for_u: UserForUpdate
+    ) -> UserResult<()> {
+        let user_repository = self.repository_manager.get_user_repository();
+        user_repository.update_user(ctx, user_for_u).await
     }
 
-    pub async fn change_pwd(&self, user_for_change_pwd: UserForChangePassword) -> UserResult<()> {
-        let user_id = self.ctx.user_id();
-        let user = self.repository.get_user(&self.ctx, user_id).await?;
+    pub async fn change_pwd(
+        &self,
+        ctx: &Ctx,
+        user_for_change_pwd: UserForChangePassword
+    ) -> UserResult<()> {
+        let user_id = ctx.user_id();
+        let user_repository = self.repository_manager.get_user_repository();
+        let user = user_repository.get_user(ctx, user_id).await?;
 
         let pwd_clear = user_for_change_pwd.pwd_clear;
 
@@ -71,11 +83,17 @@ impl<'a> UserInteractor<'a> {
 	    .await
 	    .map_err(|_| UserError::WrongPasswordError{ user_id })?;
 
-        self.update_pwd(self.ctx.user_id(), &user_for_change_pwd.new_pwd_clear).await
+        self.update_pwd(ctx, ctx.user_id(), &user_for_change_pwd.new_pwd_clear).await
     }
 
-    pub async fn update_pwd(&self, user_id: i64, pwd_clear: &str) -> UserResult<()> {
-        let user = self.repository.get_user(&self.ctx, user_id).await?;
+    pub async fn update_pwd(
+        &self, 
+        ctx: &Ctx,
+        user_id: i64, 
+        pwd_clear: &str
+    ) -> UserResult<()> {
+        let user_repository = self.repository_manager.get_user_repository();
+        let user = user_repository.get_user(ctx, user_id).await?;
 		let pwd = pwd::hash_pwd(ContentToHash {
 			content: pwd_clear.to_string(),
 			salt: user.pwd_salt,
@@ -83,6 +101,6 @@ impl<'a> UserInteractor<'a> {
 		.await
         .map_err(UserError::PwdError)?;
 
-        self.repository.update_pwd(&self.ctx, user_id, pwd).await
+        user_repository.update_pwd(ctx, user_id, pwd).await
     }
 }

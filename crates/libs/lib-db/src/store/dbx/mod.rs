@@ -1,4 +1,3 @@
-// region:    --- Modules
 pub(crate) mod error;
 
 use sqlx::postgres::any::AnyConnectionBackend;
@@ -10,9 +9,7 @@ use tokio::sync::Mutex;
 
 use self::error::{DbxResult, DbxError};
 
-use super::Db;
-
-// endregion: --- Modules
+use super::db_manager::Db;
 
 #[derive(Debug, Clone)]
 pub struct Dbx {

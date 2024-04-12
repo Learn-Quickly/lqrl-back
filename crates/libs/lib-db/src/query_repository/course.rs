@@ -10,9 +10,10 @@ use sqlx::FromRow;
 use time::OffsetDateTime;
 use crate::base::CommonIden;
 use crate::query_repository::modql_utils::time_to_sea_value;
+use crate::store::db_manager::DbManager;
 use lib_utils::time::Rfc3339;
 
-use crate::{base::{self, DbRepository}, store::{error::{DbError, DbResult}, DbManager}};
+use crate::{base::{self, DbRepository}, store::error::{DbError, DbResult}};
 
 use super::users_courses::UsersCoursesQueryRepository;
 
@@ -74,7 +75,18 @@ pub struct CourseFilter {
 	pub mtime: Option<OpValsValue>,
 }
 
-pub struct CourseQueryRepository;
+#[derive(Clone)]
+pub struct CourseQueryRepository {
+	dbm: DbManager,
+} 
+
+impl CourseQueryRepository {
+	pub fn new(dbm: DbManager) -> Self {
+		Self {
+    		dbm,
+		}
+	}
+}
 
 impl DbRepository for CourseQueryRepository {
     const TABLE: &'static str = "course";
@@ -82,21 +94,21 @@ impl DbRepository for CourseQueryRepository {
 
 impl CourseQueryRepository {
 	pub async fn list(
+		&self, 
 		ctx: &Ctx,
-		dbm: &DbManager,
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<CourseQuery>> {
-		let result = base::list::<Self, CourseQuery, _>(ctx, dbm, filter, list_options)
+		let result = base::list::<Self, CourseQuery, _>(ctx, &self.dbm, filter, list_options)
 			.await
 			.map_err(Into::<DbError>::into)?;
 
 		Ok(result)
 	}
 
-	pub async fn get(ctx: &Ctx, dbm: &DbManager, id: i64) -> DbResult<CourseQuery>
+	pub async fn get(&self, ctx: &Ctx, id: i64) -> DbResult<CourseQuery>
 	{
-		let result = base::get::<Self, CourseQuery>(ctx, dbm, id)
+		let result = base::get::<Self, CourseQuery>(ctx, &self.dbm, id)
 			.await
 			.map_err(Into::<DbError>::into)?;
 
@@ -104,12 +116,12 @@ impl CourseQueryRepository {
 	}
 
 	pub async fn get_user_courses_registered(
+		&self,
 		_ctx: &Ctx,
-		dbm: &DbManager,
 		user_id: i64,
 	) -> DbResult<Vec<CourseQuery>> {
 		let user_courses = UsersCoursesQueryRepository::get_user_courses(
-			&dbm,
+			&self.dbm,
 			user_id, 
 			super::users_courses::UserCourseRoleQuery::Student
 		).await?;
@@ -124,21 +136,20 @@ impl CourseQueryRepository {
 
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_as_with::<_, CourseQuery, _>(&sql, values);
-		let result =
-			dbm.dbx()
-				.fetch_all(sqlx_query)
-				.await?;
+		let result = self.dbm.dbx()
+			.fetch_all(sqlx_query)
+			.await?;
 
 		Ok(result)
 	}
 
 	pub async fn get_user_courses_created(
+		&self,
 		_ctx: &Ctx,
-		dbm: &DbManager,
 		user_id: i64,
 	) -> DbResult<Vec<CourseQuery>> {
 		let user_courses = UsersCoursesQueryRepository::get_user_courses(
-			&dbm,
+			&self.dbm,
 			user_id, 
 			super::users_courses::UserCourseRoleQuery::Creator
 		).await?;
@@ -153,10 +164,9 @@ impl CourseQueryRepository {
 
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_as_with::<_, CourseQuery, _>(&sql, values);
-		let result =
-			dbm.dbx()
-				.fetch_all(sqlx_query)
-				.await?;
+		let result = self.dbm.dbx()
+			.fetch_all(sqlx_query)
+			.await?;
 
 		Ok(result)
 	}

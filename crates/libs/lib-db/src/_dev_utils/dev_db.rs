@@ -6,9 +6,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
 
-use crate::command_repository::user::UserCommandRepository;
-use crate::query_repository::user::{UserData, UserQueryRepository};
-use crate::store::DbManager;
+use crate::query_repository::user::UserData;
+use crate::store::command_repository_manager::CommandRepositoryManager;
+use crate::store::query_repository_manager::QueryRepositoryManager;
 
 type Db = Pool<Postgres>;
 
@@ -69,16 +69,19 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 	}
 
 	// -- Init model layer.
-	let dbm = DbManager::new().await?;
+	let query_repository_manager =  QueryRepositoryManager::new().await?;
+	let user_query_repository = query_repository_manager.get_user_repository();
+
 	let ctx = Ctx::root_ctx();
 
 	// -- Set demo1 pwd
-	let demo1_user: UserData = UserQueryRepository::first_by_username(&ctx, &dbm, "demo1")
+	let demo1_user: UserData = user_query_repository.first_by_username(&ctx, "demo1")
 		.await?
 		.unwrap();
-	let repository = UserCommandRepository::new(dbm);
-	let user_interactor = UserInteractor::new(&ctx, &repository);
-	user_interactor.update_pwd(demo1_user.id, DEMO_PWD).await?;
+
+	let command_repository_manager = CommandRepositoryManager::new().await?;
+	let user_interactor = UserInteractor::new(&command_repository_manager);
+	user_interactor.update_pwd(&ctx, demo1_user.id, DEMO_PWD).await?;
 	info!("{:<12} - init_dev_db - set demo1 pwd", "FOR-DEV-ONLY");
 
 	Ok(())

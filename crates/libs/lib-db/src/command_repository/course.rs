@@ -12,9 +12,9 @@ use sqlx::FromRow;
 use time::OffsetDateTime;
 use typed_builder::TypedBuilder;
 use crate::base::{self, DbRepository};
+use crate::store::db_manager::DbManager;
 use crate::store::dbx::error::DbxError;
 use crate::store::error::DbError;
-use crate::store::DbManager;
 use lib_utils::time::{from_unix_timestamp, Rfc3339};
 
 use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesCommandRepository, UsersCoursesRequest};
@@ -120,6 +120,7 @@ pub trait CourseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl CourseBy for CourseRequest {}
 
+#[derive(Clone)]
 pub struct CourseCommandRepository {
 	dbm: DbManager,
 }

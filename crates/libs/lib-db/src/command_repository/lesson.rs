@@ -11,7 +11,7 @@ use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, FromRow};
 
-use crate::{base::{self, DbRepository}, store::{error::DbError, DbManager}};
+use crate::{base::{self, DbRepository}, store::{db_manager::DbManager, error::DbError}};
 
 #[derive(Clone, Fields, FromRow, Debug)]
 struct LessonData {
@@ -41,12 +41,14 @@ struct LessonForUpdateData {
 #[derive(Iden)]
 enum LessonIden {
 	CourseId,
+    LessonOrder,
 }
 
 pub trait LessonBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl LessonBy for LessonData {}
 
+#[derive(Clone)]
 pub struct LessonCommandRepository {
     dbm: DbManager,
 }
@@ -73,7 +75,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
         let result = Lesson { 
             id: lesson.id, 
             course_id: lesson.course_id, 
-            titile: lesson.title, 
+            title: lesson.title, 
             lesson_order: lesson.lesson_order, 
         };
 
@@ -89,7 +91,8 @@ impl ILessonCommandRepository for LessonCommandRepository {
         query
             .from(Self::table_ref())
             .columns(LessonData::field_column_refs())
-            .and_where(Expr::col(LessonIden::CourseId).eq(course_id));
+            .and_where(Expr::col(LessonIden::CourseId).eq(course_id))
+            .order_by(LessonIden::LessonOrder, sea_query::Order::Asc);
     
         let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
         let sqlx_query = sqlx::query_as_with::<_, LessonData, _>(&sql, values);
@@ -114,7 +117,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
     ) -> LessonResult<i64> {
         let lesson_fi = LessonForInsert {
             course_id: lesson_for_c.course_id, 
-            title: lesson_for_c.titile, 
+            title: lesson_for_c.title, 
             lesson_order:  lesson_for_c.order,
         };
 
@@ -139,7 +142,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
         lesson_for_u: LessonForUpdate
     ) -> LessonResult<()> {
         let data = LessonForUpdateData { 
-            title:  lesson_for_u.titile,
+            title:  lesson_for_u.title,
         };
 
 		base::update::<Self, LessonForUpdateData>(&ctx, &self.dbm, lesson_for_u.id, data)

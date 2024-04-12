@@ -1,16 +1,15 @@
 use axum::{extract::State, routing::post, Json, Router};
 use lib_core::{core::user::UserInteractor, ctx::Ctx};
-use lib_db::{command_repository::user::UserCommandRepository, store::DbManager};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use utoipa::ToSchema;
 
-use crate::error::AppResult;
+use crate::{app_state::AppState, error::AppResult};
 
-pub fn routes(dbm: DbManager) -> Router {
+pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/api/register", post(api_register_handler))
-		.with_state(dbm)
+		.with_state(app_state)
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -30,14 +29,14 @@ pub struct RegisterPayload {
 	)
 )]
 async fn api_register_handler(
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(payload): Json<RegisterPayload>,
 ) -> AppResult<Json<Value>> {
     let ctx = Ctx::root_ctx();
 
-	let repository = UserCommandRepository::new(dbm);
-	let user_interactor = UserInteractor::new(&ctx, &repository);
-    user_interactor.create_user(payload.pwd, payload.username).await?;
+	let command_repository_manager = app_state.command_repository_manager;
+	let user_interactor = UserInteractor::new(command_repository_manager.as_ref());
+    user_interactor.create_user(&ctx, payload.pwd, payload.username).await?;
 
 	let body = Json(json!({
 		"result": {

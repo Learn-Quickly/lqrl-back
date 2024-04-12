@@ -1,13 +1,9 @@
-// region:    --- Modules
-
 mod dev_db;
 
 use tokio::sync::OnceCell;
 use tracing::info;
 
-use crate::store::DbManager;
-
-// endregion: --- Modules
+use crate::store::db_manager::DbManager;
 
 /// Initialize environment for local development.
 /// (for early development, will be called from main()).

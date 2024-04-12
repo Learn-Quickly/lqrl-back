@@ -6,22 +6,21 @@ use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
 use lib_core::core::user::UserInteractor;
 use lib_core::ctx::Ctx;
-use lib_db::command_repository::user::UserCommandRepository;
-use lib_db::query_repository::user::{UserData, UserQueryRepository};
-use lib_db::store::DbManager;
+use lib_db::query_repository::user::UserData;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tracing::debug;
 use utoipa::ToSchema;
 
+use crate::app_state::AppState;
 use crate::error::{AppError, AppResult};
 use crate::middleware::mw_auth::CtxExtError;
 
-pub fn routes(dbm: DbManager) -> Router {
+pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/api/login", post(api_login_handler))
 		.route("/api/refresh_token", post(api_refresh_access_token_handler))
-		.with_state(dbm)
+		.with_state(app_state)
 }
 
 #[utoipa::path(
@@ -36,14 +35,15 @@ pub fn routes(dbm: DbManager) -> Router {
 	)
 )]
 async fn api_login_handler(
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	AuthBasic((username, pwd_clear)): AuthBasic,
 ) -> AppResult<Json<Value>> {
 	debug!("{:<12} - api_login_handler", "HANDLER");
 
 	let root_ctx = Ctx::root_ctx();
 
-	let user: UserData = UserQueryRepository::first_by_username(&root_ctx, &dbm, &username)
+	let user_query_repository = app_state.query_repository_manager.get_user_repository();
+	let user: UserData = user_query_repository.first_by_username(&root_ctx, &username)
 		.await?
 		.ok_or(AppError::LoginFailUsernameNotFound)?;
 
@@ -72,9 +72,9 @@ async fn api_login_handler(
 	// -- Update password scheme if needed
 	if let SchemeStatus::Outdated = scheme_status {
 		debug!("pwd encrypt scheme outdated, upgrading.");
-		let repository = UserCommandRepository::new(dbm);
-		let user_countroller = UserInteractor::new(&root_ctx, &repository);
-		user_countroller.update_pwd(user.id, &pwd_clear).await?;
+		let command_repository_manager = app_state.command_repository_manager;
+		let user_countroller = UserInteractor::new(command_repository_manager.as_ref());
+		user_countroller.update_pwd(&&root_ctx, user.id, &pwd_clear).await?;
 	}
 
 	let access_token = generate_web_token(&user.username, user.token_salt, lib_auth::token::TokenType::Access)?;
@@ -106,13 +106,14 @@ pub struct RefreshTokenPayload {
 	)
 )]
 async fn api_refresh_access_token_handler(
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(payload): Json<RefreshTokenPayload>
 ) -> AppResult<Json<Value>> {
 	let refresh_token: Token = payload.refresh_token.parse().map_err(|_| CtxExtError::TokenWrongFormat)?;
 
+	let user_query_repository = app_state.query_repository_manager.get_user_repository();
 	let user: UserData =
-		UserQueryRepository::first_by_username(&Ctx::root_ctx(), &dbm, &refresh_token.ident)
+		user_query_repository.first_by_username(&Ctx::root_ctx(), &refresh_token.ident)
 			.await
 			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
 			.ok_or(CtxExtError::UserNotFound)?;

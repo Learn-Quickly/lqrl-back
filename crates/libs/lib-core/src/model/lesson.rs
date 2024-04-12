@@ -2,24 +2,24 @@
 pub struct Lesson {
     pub id: i64,
     pub course_id: i64,
-    pub titile: String,
+    pub title: String,
     pub lesson_order: i32,
 }
 
 pub struct LessonForCreate {
     pub course_id: i64,
-    pub titile: String,
+    pub title: String,
 }
 
 pub struct LessonForCreateCommand {
     pub course_id: i64,
-    pub titile: String,
+    pub title: String,
     pub order: i32,
 }
 
 pub struct LessonForUpdate {
     pub id: i64,
-    pub titile: String,
+    pub title: String,
 }
 
 #[derive(Debug, PartialEq)]

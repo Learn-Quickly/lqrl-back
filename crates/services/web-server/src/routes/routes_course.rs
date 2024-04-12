@@ -1,14 +1,14 @@
 use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post, put}, Json, Router};
 use lib_core::{core::course::CourseInteractor, model::course::{CourseForCreate, CourseForUpdate}};
-use lib_db::{command_repository::course::CourseCommandRepository, query_repository::course::{CourseQuery, CourseStateQuery, CourseQueryRepository}, store::DbManager};
+use lib_db::query_repository::course::{CourseQuery, CourseStateQuery};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::serde_as;
 use utoipa::ToSchema;
 
-use crate::{error::AppResult, middleware::mw_auth::CtxW};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW};
 
-pub fn routes(dbm: DbManager) -> Router {
+pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/create_course_draft", post(api_create_course_draft_handler))
 		.route("/update", put(api_update_course_handler))
@@ -21,7 +21,7 @@ pub fn routes(dbm: DbManager) -> Router {
 		.route("/get_courses/", post(api_get_courses_handler))
 		.route("/get_user_courses_registered/", get(api_get_user_courses_registered_handler))
 		.route("/get_user_courses_created/", get(api_get_user_courses_created_handler))
-		.with_state(dbm)
+		.with_state(app_state)
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -52,7 +52,7 @@ pub struct CreatedCourseDraft {
 )]
 async fn api_create_course_draft_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(paylod): Json<CourseCreateDraftPayload>
 ) -> AppResult<Json<CreatedCourseDraft>> {
 	let ctx = ctx.0;
@@ -65,10 +65,10 @@ async fn api_create_course_draft_handler(
     	color: paylod.color,
 	};
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
-	let course_id = course_interactor.create_draft(course_c).await?;
+	let course_id = course_interactor.create_draft(&ctx, course_c).await?;
 
 	let created_course_draft = CreatedCourseDraft {
     	course_id,
@@ -102,7 +102,7 @@ pub struct CourseUpdatePayload {
 )]
 async fn api_update_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(payload): Json<CourseUpdatePayload>
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
@@ -116,10 +116,10 @@ async fn api_update_course_handler(
     	img_url: None,
 	};
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
-	course_interactor.update_course(course_for_u, payload.id).await?;
+	course_interactor.update_course(&ctx, course_for_u, payload.id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -148,14 +148,15 @@ pub struct CourseId {
 )]
 async fn api_publish_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(course_id): Json<CourseId>,
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
-	course_interactor.publish_course(course_id.course_id).await?;
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
+
+	course_interactor.publish_course(&ctx, course_id.course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -179,15 +180,15 @@ async fn api_publish_course_handler(
 )]
 async fn api_archive_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(course_id): Json<CourseId>,
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
-	course_interactor.archive_course(course_id.course_id).await?;
+	course_interactor.archive_course(&ctx, course_id.course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -215,14 +216,14 @@ async fn api_archive_course_handler(
 #[debug_handler]
 async fn api_set_course_img_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Path(course_id): Path<i64>,
 	mut multipart: Multipart,
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
     while let Some(field) = multipart.next_field().await? {
         let field_name = if let Some(field_name) = field.name() {
@@ -233,7 +234,7 @@ async fn api_set_course_img_handler(
 		
         if field_name == "image" {
             let data = field.bytes().await?;
-			let img_url = course_interactor.set_course_img(course_id, &data, "/public/uploads").await?;
+			let img_url = course_interactor.set_course_img(&ctx, course_id, &data, "/public/uploads").await?;
 
 			let body = Json(json!({
 				"result": {
@@ -267,16 +268,16 @@ async fn api_set_course_img_handler(
 )]
 async fn api_register_for_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(course_id): Json<CourseId>
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
-	course_interactor.register_for_course(course_id).await?;
+	course_interactor.register_for_course(&ctx, course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -300,16 +301,16 @@ async fn api_register_for_course_handler(
 )]
 async fn api_unsubscribe_from_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(course_id): Json<CourseId>
 ) -> AppResult<Json<Value>> {
 	let ctx = ctx.0;
 	let course_id = course_id.course_id;
 
-	let repository = CourseCommandRepository::new(dbm);
-	let course_interactor = CourseInteractor::new(&ctx, &repository);
+	let command_repository_manager = app_state.command_repository_manager;
+	let course_interactor = CourseInteractor::new(command_repository_manager);
 
-	course_interactor.unsubscribe_from_course(course_id).await?;
+	course_interactor.unsubscribe_from_course(&ctx, course_id).await?;
 
 	let body = Json(json!({
 		"result": {
@@ -387,12 +388,13 @@ impl From<CourseQuery> for CoursePayload {
 )]
 async fn api_get_course_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Path(course_id): Path<i64>,
 ) -> AppResult<Json<CoursePayload>> {
 	let ctx = ctx.0;
 
-	let course = CourseQueryRepository::get(&ctx, &dbm, course_id).await?;
+	let course_query_repository = app_state.query_repository_manager.get_course_repository();
+	let course = course_query_repository.get(&ctx, course_id).await?;
 
 	Ok(Json(course.into()))
 }
@@ -426,7 +428,7 @@ pub struct CourseFilterPayload {
 )]
 async fn api_get_courses_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 	Json(filter_payload): Json<CourseFilterPayload>,
 ) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
@@ -443,7 +445,8 @@ async fn api_get_courses_handler(
 		None
 	};
 
-	let courses: Vec<CourseQuery> = CourseQueryRepository::list(&ctx, &dbm, filters, list_options).await?;
+	let course_query_repository = app_state.query_repository_manager.get_course_repository();
+	let courses: Vec<CourseQuery> = course_query_repository.list(&ctx, filters, list_options).await?;
 	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
 	Ok(Json(body))
@@ -461,12 +464,13 @@ async fn api_get_courses_handler(
 )]
 async fn api_get_user_courses_created_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 ) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
 	let user_id = ctx.user_id();
 
-	let courses: Vec<CourseQuery> = CourseQueryRepository::get_user_courses_created(&ctx, &dbm, user_id).await?;
+	let course_query_repository = app_state.query_repository_manager.get_course_repository();
+	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_created(&ctx, user_id).await?;
 	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
 	Ok(Json(body))
@@ -484,12 +488,13 @@ async fn api_get_user_courses_created_handler(
 )]
 async fn api_get_user_courses_registered_handler(
 	ctx: CtxW,
-	State(dbm): State<DbManager>,
+	State(app_state): State<AppState>,
 ) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
 	let user_id = ctx.user_id();
 
-	let courses: Vec<CourseQuery> = CourseQueryRepository::get_user_courses_registered(&ctx, &dbm, user_id).await?;
+	let course_query_repository = app_state.query_repository_manager.get_course_repository();
+	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_registered(&ctx, user_id).await?;
 	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
 
 	Ok(Json(body))

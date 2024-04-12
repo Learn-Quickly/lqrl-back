@@ -1,7 +1,7 @@
 use crate::base::{self, DbRepository};
+use crate::store::db_manager::DbManager;
 use crate::store::dbx::error::DbxError;
 use crate::store::error::{DbError, DbResult};
-use crate::store::DbManager;
 use async_trait::async_trait;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::user::{IUserCommandRepository, UserResult};
@@ -63,7 +63,7 @@ impl UserBy for UserData {}
 impl UserBy for UserForLogin {}
 impl UserBy for UserForAuth {}
 
-
+#[derive(Clone)]
 pub struct UserCommandRepository {
 	dbm: DbManager,
 }

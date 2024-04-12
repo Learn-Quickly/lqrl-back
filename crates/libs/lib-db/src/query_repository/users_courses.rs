@@ -4,7 +4,7 @@ use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use crate::{base::DbRepository, store::{error::DbResult, DbManager}};
+use crate::{base::DbRepository, store::{db_manager::DbManager, error::DbResult}};
 
 #[derive(Iden)]
 pub enum UserCourseIden {
