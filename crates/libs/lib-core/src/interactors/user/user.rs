@@ -2,7 +2,7 @@ use lib_auth::pwd::{self, ContentToHash};
 use uuid::Uuid;
 
 use crate::{
-    ctx::Ctx, interactors::error::UserError, interfaces::{command_repository_manager::ICommandRepositoryManager, user::UserResult}, model::user::{
+    ctx::Ctx, interactors::error::UserError, interfaces::{command_repository_manager::ICommandRepositoryManager, user::UserResult}, models::user::{
         UserForChangePassword,
         UserForCreate,
         UserForUpdate

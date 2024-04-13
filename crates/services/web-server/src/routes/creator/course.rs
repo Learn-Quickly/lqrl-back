@@ -1,5 +1,5 @@
 use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post, put}, Json, Router};
-use lib_core::{interactors::creator::course::CreatorCourseInteractor, model::course::{CourseForCreate, CourseForUpdate}};
+use lib_core::{interactors::creator::course::CreatorCourseInteractor, models::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
 

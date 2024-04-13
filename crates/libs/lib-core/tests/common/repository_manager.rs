@@ -1,4 +1,4 @@
-use lib_core::{interfaces::{command_repository_manager::ICommandRepositoryManager, course::ICourseCommandRepository, lesson::ILessonCommandRepository, user::IUserCommandRepository}, model::lesson::Lesson};
+use lib_core::{interfaces::{command_repository_manager::ICommandRepositoryManager, course::ICourseCommandRepository, lesson::ILessonCommandRepository, user::IUserCommandRepository}, models::lesson::Lesson};
 
 use super::repository::{CourseCommandRepositoryMock, LessonCommandRepositoryMock, UserCommandRepositoryMock};
 

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use lib_core::interactors::error::CoreError;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::course::{ICourseCommandRepository, CourseResult};
-use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole};
+use lib_core::models::course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole};
 use modql::field::{Fields, HasFields};
 use serde::Serialize;
 use serde_with::serde_as;

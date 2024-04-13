@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{interactors::error::CoreError, ctx::Ctx, model::user::{User, UserForCreate, UserForUpdate}};
+use crate::{interactors::error::CoreError, ctx::Ctx, models::user::{User, UserForCreate, UserForUpdate}};
 
 
 pub type UserResult<T> = core::result::Result<T, CoreError>;

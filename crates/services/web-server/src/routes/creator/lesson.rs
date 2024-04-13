@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::{delete, post, put}, Json, Router};
-use lib_core::{interactors::creator::lesson::CreatorLessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
+use lib_core::{interactors::creator::lesson::CreatorLessonInteractor, models::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
 use serde_json::{json, Value};
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::lesson::{LessonChangeOrderPayload, LessonCreatePayload, LessonCreatedPayload, LessonDeletePayload, LessonUpdatePayload}};

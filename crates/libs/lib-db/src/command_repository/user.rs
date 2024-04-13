@@ -5,7 +5,7 @@ use crate::store::error::{DbError, DbResult};
 use async_trait::async_trait;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::user::{IUserCommandRepository, UserResult};
-use lib_core::model::user::{User, UserForCreate, UserForUpdate};
+use lib_core::models::user::{User, UserForCreate, UserForUpdate};
 use modql::field::{Fields, HasFields};
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;

@@ -4,7 +4,7 @@ use crate::{
     ctx::Ctx,
     interactors::{error::CourseError, img_file::{remove_file, upload_file}, permission_manager::PermissionManager}, 
     interfaces::{command_repository_manager::ICommandRepositoryManager, course::CourseResult}, 
-    model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}
+    models::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}
 };
 
 pub struct CreatorCourseInteractor {
@@ -96,7 +96,7 @@ impl CreatorCourseInteractor {
         self.permission_manager.check_course_creator_permission(ctx, course_id).await?;
 
         let command = CourseForUpdateCommand::builder()
-            .state(crate::model::course::CourseState::Published)
+            .state(crate::models::course::CourseState::Published)
             .build();
 
         let course_repository = self.repository_manager.get_course_repository();
@@ -111,7 +111,7 @@ impl CreatorCourseInteractor {
         self.permission_manager.check_course_creator_permission(ctx, course_id).await?;
 
         let command = CourseForUpdateCommand::builder()
-            .state(crate::model::course::CourseState::Archived)
+            .state(crate::models::course::CourseState::Archived)
             .build();
 
         let course_repository = self.repository_manager.get_course_repository();
@@ -126,7 +126,7 @@ impl CreatorCourseInteractor {
         let course_repository = self.repository_manager.get_course_repository();
         let course = course_repository.get_course(ctx, course_id).await?;
 
-        if !course.state.eq(&crate::model::course::CourseState::Published) {
+        if !course.state.eq(&crate::models::course::CourseState::Published) {
             return Err(CourseError::CourseMustBePublishedError.into())
         }
 
@@ -135,7 +135,7 @@ impl CreatorCourseInteractor {
             .await?;
 
         if let Some(user_course) = user_course {
-            if user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
+            if user_course.user_role.eq(&crate::models::course::UserCourseRole::Creator) {
                 return Err(CourseError::CreatorCannotSubscribeToTheCourse.into());
             }
             
@@ -145,7 +145,7 @@ impl CreatorCourseInteractor {
         let course_for_register = UserCourse {
             user_id: ctx.user_id(),
             course_id,
-            user_role: crate::model::course::UserCourseRole::Student,
+            user_role: crate::models::course::UserCourseRole::Student,
         };
 
         course_repository.create_user_course(ctx, course_for_register).await?;

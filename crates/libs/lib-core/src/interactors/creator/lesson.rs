@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interactors::{error::LessonError, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, lesson::LessonResult}, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForCreateCommand, LessonForUpdate}};
+use crate::{ctx::Ctx, interactors::{error::LessonError, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, lesson::LessonResult}, models::lesson::{LessonForChangeOreder, LessonForCreate, LessonForCreateCommand, LessonForUpdate}};
 
 
 pub struct CreatorLessonInteractor {

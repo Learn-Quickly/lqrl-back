@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use lib_core::{
     ctx::Ctx, 
     interfaces::lesson::{ILessonCommandRepository, LessonResult}, 
-    model::lesson::{
+    models::lesson::{
         Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate
     }
 };

@@ -44,7 +44,7 @@ impl PermissionManager {
 
         let course_repository = self.repository_manager.get_course_repository();
         let user_course = course_repository.get_user_course(ctx, ctx.user_id(), course_id).await?;
-        if !user_course.user_role.eq(&crate::model::course::UserCourseRole::Creator) {
+        if !user_course.user_role.eq(&crate::models::course::UserCourseRole::Creator) {
             return Err(CoreError::PermissionDenied);
         }
 
