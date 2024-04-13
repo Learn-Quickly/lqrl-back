@@ -24,6 +24,7 @@ pub struct LessonCreatedPayload {
 pub struct LessonCreatePayload {
     pub course_id: i64,
     pub title: String,
+	pub description: String,
 }
 
 #[utoipa::path(
@@ -47,6 +48,7 @@ async fn api_create_lesson_handler(
     let lesson_c = LessonForCreate {
         course_id: paylod.course_id,
         title: paylod.title,
+		description: paylod.description,
     };
 
 	let command_repository_manager = app_state.command_repository_manager;

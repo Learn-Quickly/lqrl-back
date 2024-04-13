@@ -59,7 +59,24 @@ CREATE TABLE lesson (
   course_id BIGINT NOT NULL,
 
   title varchar(256) NOT NULL,
+  description varchar(256) NOT NULL,
   lesson_order integer NOT NULL
+);
+
+-- Lessons completed 
+CREATE TABLE lesson_progress (
+  user_id BIGINT NOT NULL,
+  lesson_id BIGINT NOT NULL,
+
+  max_poits integer NOT NULL,
+  points_scored integer NOT NULL,
+
+  number_of_exercises integer NOT NULL,
+  number_of_completed_exercises integer NOT NULL,
+
+  PRIMARY KEY (user_id, lesson_id),
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id),
+  CONSTRAINT fk_lesson FOREIGN KEY (lesson_id) REFERENCES lesson(id)
 );
 
 -- Exercise 
@@ -73,6 +90,8 @@ CREATE TABLE exercise (
   has_free_preview boolean NOT NULL,
   exercise_order integer NOT NULL,
 
+  max_poits integer NOT NULL,
+
   CONSTRAINT fk_lesson FOREIGN KEY (lesson_id) REFERENCES lesson(id) ON DELETE CASCADE
 );
 
@@ -80,7 +99,11 @@ CREATE TABLE exercise (
 CREATE TABLE exercise_completed (
   user_id BIGINT NOT NULL,
   exercise_id BIGINT NOT NULL,
-  points integer NOT NULL,
+
+  max_poits integer NOT NULL,
+  points_scored integer NOT NULL,
+
+  number_of_attempts integer NOT NULL,
 
   PRIMARY KEY (user_id, exercise_id),
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id),

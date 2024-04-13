@@ -25,6 +25,7 @@ struct LessonData {
 struct LessonForInsert {
 	pub course_id: i64,
     pub title: String,
+    pub description: String,
     pub lesson_order: i32,
 }
 
@@ -118,6 +119,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
         let lesson_fi = LessonForInsert {
             course_id: lesson_for_c.course_id, 
             title: lesson_for_c.title, 
+            description: lesson_for_c.description,
             lesson_order:  lesson_for_c.order,
         };
 

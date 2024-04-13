@@ -9,11 +9,13 @@ pub struct Lesson {
 pub struct LessonForCreate {
     pub course_id: i64,
     pub title: String,
+    pub description: String,
 }
 
 pub struct LessonForCreateCommand {
     pub course_id: i64,
     pub title: String,
+    pub description: String,
     pub order: i32,
 }
 

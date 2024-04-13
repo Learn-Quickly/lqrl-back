@@ -44,6 +44,7 @@ impl LessonInteractor {
         let lesson_for_c = LessonForCreateCommand {
             course_id: lesson.course_id,
             title: lesson.title,
+            description: lesson.description,
             order: order as i32,
         };
 
