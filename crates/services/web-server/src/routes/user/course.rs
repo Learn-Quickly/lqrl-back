@@ -1,4 +1,4 @@
-use axum::{extract::{Path, State}, routing::{get, post}, Json, Router};
+use axum::{extract::{Path, Query, State}, routing::{get, post}, Json, Router};
 use lib_db::query_repository::course::CourseQuery;
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseFilterPayload, CoursePayload}};
@@ -6,7 +6,7 @@ use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, ro
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/get_course/:i64", get(api_get_course_handler))
-		.route("/get_courses/", post(api_get_courses_handler))
+		.route("/get_courses/", get(api_get_courses_handler))
 		.with_state(app_state)
 }
 
@@ -37,9 +37,12 @@ async fn api_get_course_handler(
 }
 
 #[utoipa::path(
-	post,
+	get,
 	path = "/api/course/get_courses/",
-	request_body = CourseFilterPayload,
+	params(
+		("filters", description = "List of filters"),
+		("list_options", description = "Contains offset, limit, order_bys"),
+	),
 	// params(
 	// 	("filter_payload", description = 
 	// 		"It contains two optional fields:\n
@@ -58,7 +61,7 @@ async fn api_get_course_handler(
 async fn api_get_courses_handler(
 	ctx: CtxW,
 	State(app_state): State<AppState>,
-	Json(filter_payload): Json<CourseFilterPayload>,
+	Query(filter_payload): Query<CourseFilterPayload>,
 ) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
 
