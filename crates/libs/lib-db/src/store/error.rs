@@ -1,6 +1,6 @@
 use derive_more::From;
 use lib_auth::pwd;
-use lib_core::core::error::CoreError;
+use lib_core::interactors::error::CoreError;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 

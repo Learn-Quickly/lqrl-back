@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use lib_core::{core::error::{CoreError, LessonError}, ctx::Ctx, interfaces::{course::{CourseResult, ICourseCommandRepository}, lesson::{ILessonCommandRepository, LessonResult}, user::{IUserCommandRepository, UserResult}}, model::{course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole}, lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}, user::{User, UserForCreate, UserForUpdate}}};
+use lib_core::{interactors::error::{CoreError, LessonError}, ctx::Ctx, interfaces::{course::{CourseResult, ICourseCommandRepository}, lesson::{ILessonCommandRepository, LessonResult}, user::{IUserCommandRepository, UserResult}}, model::{course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole}, lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}, user::{User, UserForCreate, UserForUpdate}}};
 
 #[derive(Clone)]
 pub struct CourseCommandRepositoryMock;

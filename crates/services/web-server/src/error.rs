@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
 use lib_auth::{pwd, token};
-use lib_core::core::error::CoreError;
+use lib_core::interactors::error::CoreError;
 use lib_db::store::error::DbError;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};

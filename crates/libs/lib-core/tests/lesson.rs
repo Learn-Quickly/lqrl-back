@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use lib_core::{core::lesson::LessonInteractor, ctx::Ctx, interfaces::command_repository_manager::ICommandRepositoryManager, model::lesson::{Lesson, LessonForChangeOreder}};
+use lib_core::{interactors::creator::lesson::CreatorLessonInteractor, ctx::Ctx, interfaces::command_repository_manager::ICommandRepositoryManager, model::lesson::{Lesson, LessonForChangeOreder}};
 
 use crate::common::repository_manager::CommandRepositoryManagerMock;
 
@@ -146,7 +146,7 @@ async fn test_change_order() {
     for test_data in data {
         let repository_manager = Arc::new(CommandRepositoryManagerMock::new(test_data.lessons));
 
-        let lesson_interactor = LessonInteractor::new(repository_manager.clone());
+        let lesson_interactor = CreatorLessonInteractor::new(repository_manager.clone());
 
         let ctx = Ctx::new(user_id).unwrap();
 

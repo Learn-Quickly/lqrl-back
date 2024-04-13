@@ -4,7 +4,7 @@ use axum::{Json, Router};
 use axum_auth::AuthBasic;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_auth::token::{generate_web_token, validate_web_token, Token};
-use lib_core::core::user::UserInteractor;
+use lib_core::interactors::user::user::UserInteractor;
 use lib_core::ctx::Ctx;
 use lib_db::query_repository::user::UserData;
 use serde::Deserialize;

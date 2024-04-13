@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{core::error::CoreError, ctx::Ctx, model::lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}};
+use crate::{interactors::error::CoreError, ctx::Ctx, model::lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}};
 
 
 pub type LessonResult<T> = core::result::Result<T, CoreError>;

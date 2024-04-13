@@ -1,6 +1,6 @@
 use typed_builder::TypedBuilder;
 
-use crate::core::error::{CoreError, CourseError, UserError};
+use crate::interactors::error::{CoreError, CourseError, UserError};
 
 #[derive(Clone)]
 pub struct Course {

@@ -1,16 +1,14 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interfaces::{command_repository_manager::ICommandRepositoryManager, lesson::LessonResult}, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForCreateCommand, LessonForUpdate}};
-
-use super::{error::LessonError, permission_manager::PermissionManager};
+use crate::{ctx::Ctx, interactors::{error::LessonError, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, lesson::LessonResult}, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForCreateCommand, LessonForUpdate}};
 
 
-pub struct LessonInteractor {
+pub struct CreatorLessonInteractor {
     permission_manager: PermissionManager,
     repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
 }
 
-impl LessonInteractor {
+impl CreatorLessonInteractor {
     pub fn new(
         repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
     ) -> Self {
@@ -23,7 +21,7 @@ impl LessonInteractor {
     }
 }
 
-impl LessonInteractor {
+impl CreatorLessonInteractor {
     pub async fn create_lesson(
         &self, 
         ctx: &Ctx,

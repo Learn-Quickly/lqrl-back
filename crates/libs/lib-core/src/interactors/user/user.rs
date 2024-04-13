@@ -2,16 +2,12 @@ use lib_auth::pwd::{self, ContentToHash};
 use uuid::Uuid;
 
 use crate::{
-    ctx::Ctx,
-    interfaces::{command_repository_manager::ICommandRepositoryManager, user::UserResult},
-    model::user::{
+    ctx::Ctx, interactors::error::UserError, interfaces::{command_repository_manager::ICommandRepositoryManager, user::UserResult}, model::user::{
         UserForChangePassword,
         UserForCreate,
         UserForUpdate
     }
 };
-
-use super::error::UserError;
 
 pub struct UserInteractor<'a> {
     repository_manager: &'a (dyn ICommandRepositoryManager + Send + Sync),

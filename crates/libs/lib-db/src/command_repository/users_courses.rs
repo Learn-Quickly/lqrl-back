@@ -1,4 +1,4 @@
-use lib_core::{core::error::CoreError, model::course::UserCourse};
+use lib_core::{interactors::error::CoreError, model::course::UserCourse};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;

@@ -1,4 +1,4 @@
-use lib_core::core::user::UserInteractor;
+use lib_core::interactors::user::user::UserInteractor;
 use lib_core::ctx::Ctx;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};

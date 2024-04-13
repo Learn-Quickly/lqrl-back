@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lib_core::core::error::CoreError;
+use lib_core::interactors::error::CoreError;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::course::{ICourseCommandRepository, CourseResult};
 use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole};

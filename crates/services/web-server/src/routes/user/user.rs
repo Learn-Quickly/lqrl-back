@@ -1,5 +1,5 @@
 use axum::{extract::{Path, State}, routing::{get, put}, Json, Router};
-use lib_core::{core::user::UserInteractor, model::user::{UserForChangePassword, UserForUpdate}};
+use lib_core::{interactors::user::user::UserInteractor, model::user::{UserForChangePassword, UserForUpdate}};
 use lib_db::query_repository::user::UserData;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

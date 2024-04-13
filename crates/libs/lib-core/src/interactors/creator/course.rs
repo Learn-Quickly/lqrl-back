@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interfaces::{command_repository_manager::ICommandRepositoryManager, course::CourseResult}, model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}};
+use crate::{
+    ctx::Ctx,
+    interactors::{error::CourseError, img_file::{remove_file, upload_file}, permission_manager::PermissionManager}, 
+    interfaces::{command_repository_manager::ICommandRepositoryManager, course::CourseResult}, 
+    model::course::{CourseForCreate, CourseForUpdate, CourseForUpdateCommand, UserCourse}
+};
 
-use super::{error::CourseError, img_file::{remove_file, upload_file}, permission_manager::PermissionManager};
-
-pub struct CourseInteractor {
+pub struct CreatorCourseInteractor {
     permission_manager: PermissionManager,
     repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
 }
 
-impl CourseInteractor {
+impl CreatorCourseInteractor {
     pub fn new(
         repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
     ) -> Self {
@@ -22,7 +25,7 @@ impl CourseInteractor {
     }
 }
 
-impl CourseInteractor {
+impl CreatorCourseInteractor {
     pub async fn create_draft(
         &self,
         ctx: &Ctx,

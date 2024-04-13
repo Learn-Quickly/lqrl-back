@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::{delete, post, put}, Json, Router};
-use lib_core::{core::lesson::LessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
+use lib_core::{interactors::creator::lesson::CreatorLessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
 use serde_json::{json, Value};
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::lesson::{LessonChangeOrderPayload, LessonCreatePayload, LessonCreatedPayload, LessonDeletePayload, LessonUpdatePayload}};
@@ -38,7 +38,7 @@ async fn api_create_lesson_handler(
     };
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let lesson_interactor = LessonInteractor::new(command_repository_manager);
+	let lesson_interactor = CreatorLessonInteractor::new(command_repository_manager);
 
     let lesson_id = lesson_interactor.create_lesson(&ctx, lesson_c).await?;
 
@@ -70,7 +70,7 @@ async fn api_delete_lesson_handler(
     let ctx = ctx.0;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let lesson_interactor = LessonInteractor::new(command_repository_manager);
+	let lesson_interactor = CreatorLessonInteractor::new(command_repository_manager);
 
     lesson_interactor.delete_lesson(&ctx, paylod.lesson_id).await?;
 
@@ -107,7 +107,7 @@ async fn api_update_lesson_handler(
     };
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let lesson_interactor = LessonInteractor::new(command_repository_manager);
+	let lesson_interactor = CreatorLessonInteractor::new(command_repository_manager);
 
     lesson_interactor.update_lesson(&ctx, lesson_u).await?;
 
@@ -144,7 +144,7 @@ async fn api_lesson_change_order_handler(
     };
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let lesson_interactor = LessonInteractor::new(command_repository_manager);
+	let lesson_interactor = CreatorLessonInteractor::new(command_repository_manager);
 
     lesson_interactor.change_order(&ctx, lesson_c_o).await?;
 

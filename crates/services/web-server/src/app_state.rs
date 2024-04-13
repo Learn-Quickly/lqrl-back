@@ -5,7 +5,7 @@ use lib_db::store::{command_repository_manager::CommandRepositoryManager, error:
 
 #[derive(Clone)]
 pub struct AppState {
-    pub query_repository_manager: QueryRepositoryManager,
+    pub query_repository_manager: Arc<QueryRepositoryManager>,
     pub command_repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
 }
 
@@ -15,7 +15,7 @@ impl AppState {
         let command_repository_manager =  CommandRepositoryManager::new().await?;
 
         let result = Self {
-            query_repository_manager,
+            query_repository_manager: Arc::new(query_repository_manager),
             command_repository_manager: Arc::new(command_repository_manager),
         };
 

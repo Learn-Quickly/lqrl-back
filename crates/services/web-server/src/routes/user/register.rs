@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::post, Json, Router};
-use lib_core::{core::user::UserInteractor, ctx::Ctx};
+use lib_core::{interactors::user::user::UserInteractor, ctx::Ctx};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use utoipa::ToSchema;

@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::{get, put}, Json, Router};
-use lib_core::core::course::CourseInteractor;
+use lib_core::interactors::student::course::StudentCourseInteractor;
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
 
@@ -33,7 +33,7 @@ async fn api_register_for_course_handler(
 	let course_id = course_id.course_id;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = StudentCourseInteractor::new(command_repository_manager);
 
 	course_interactor.register_for_course(&ctx, course_id).await?;
 
@@ -66,7 +66,7 @@ async fn api_unsubscribe_from_course_handler(
 	let course_id = course_id.course_id;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = StudentCourseInteractor::new(command_repository_manager);
 
 	course_interactor.unsubscribe_from_course(&ctx, course_id).await?;
 

@@ -1,5 +1,5 @@
 use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post, put}, Json, Router};
-use lib_core::{core::course::CourseInteractor, model::course::{CourseForCreate, CourseForUpdate}};
+use lib_core::{interactors::creator::course::CreatorCourseInteractor, model::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
 
@@ -44,7 +44,7 @@ async fn api_create_course_draft_handler(
 	};
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = CreatorCourseInteractor::new(command_repository_manager);
 
 	let course_id = course_interactor.create_draft(&ctx, course_c).await?;
 
@@ -85,7 +85,7 @@ async fn api_update_course_handler(
 	};
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = CreatorCourseInteractor::new(command_repository_manager);
 
 	course_interactor.update_course(&ctx, course_for_u, payload.id).await?;
 
@@ -117,7 +117,7 @@ async fn api_publish_course_handler(
 	let ctx = ctx.0;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = CreatorCourseInteractor::new(command_repository_manager);
 
 	course_interactor.publish_course(&ctx, course_id.course_id).await?;
 
@@ -149,7 +149,7 @@ async fn api_archive_course_handler(
 	let ctx = ctx.0;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = CreatorCourseInteractor::new(command_repository_manager);
 
 	course_interactor.archive_course(&ctx, course_id.course_id).await?;
 
@@ -186,7 +186,7 @@ async fn api_set_course_img_handler(
 	let ctx = ctx.0;
 
 	let command_repository_manager = app_state.command_repository_manager;
-	let course_interactor = CourseInteractor::new(command_repository_manager);
+	let course_interactor = CreatorCourseInteractor::new(command_repository_manager);
 
     while let Some(field) = multipart.next_field().await? {
         let field_name = if let Some(field_name) = field.name() {
