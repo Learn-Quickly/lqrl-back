@@ -1,10 +1,8 @@
 use axum::{extract::State, routing::{delete, post, put}, Json, Router};
 use lib_core::{core::lesson::LessonInteractor, model::lesson::{LessonForChangeOreder, LessonForCreate, LessonForUpdate}};
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use utoipa::ToSchema;
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::lesson::{LessonChangeOrderPayload, LessonCreatePayload, LessonCreatedPayload, LessonDeletePayload, LessonUpdatePayload}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
@@ -13,18 +11,6 @@ pub fn routes(app_state: AppState) -> Router {
 		.route("/update", put(api_update_lesson_handler))
 		.route("/change_order", put(api_lesson_change_order_handler))
 		.with_state(app_state)
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct LessonCreatedPayload {
-    lesson_id: i64,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LessonCreatePayload {
-    pub course_id: i64,
-    pub title: String,
-	pub description: String,
 }
 
 #[utoipa::path(
@@ -65,11 +51,6 @@ async fn api_create_lesson_handler(
     Ok(body)
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LessonDeletePayload {
-	pub lesson_id: i64,
-}
-
 #[utoipa::path(
 	delete,
 	path = "/api/course/lesson/delete",
@@ -100,12 +81,6 @@ async fn api_delete_lesson_handler(
 	}));
 
     Ok(body)
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LessonUpdatePayload {
-    pub lesson_id: i64,
-    pub title: String,
 }
 
 #[utoipa::path(
@@ -143,12 +118,6 @@ async fn api_update_lesson_handler(
 	}));
 
     Ok(body)
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LessonChangeOrderPayload {
-    pub lesson_id: i64,
-    pub order: i32,
 }
 
 #[utoipa::path(

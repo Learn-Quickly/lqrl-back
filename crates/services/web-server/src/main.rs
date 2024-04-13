@@ -19,7 +19,7 @@ use crate::middleware::mw_auth::{mw_ctx_require, mw_ctx_resolver};
 use crate::middleware::mw_req_stamp::mw_req_stamp_resolver;
 use crate::middleware::mw_res_map::mw_reponse_map;
 use crate::routes::routes_static;
-use crate::routes::user_routes::{routes_login, routes_register};
+use crate::routes::user::{login, register};
 use axum::{middleware as axum_middleware, Router};
 use tokio::net::TcpListener;
 use tracing::info;
@@ -44,22 +44,30 @@ async fn main() -> AppResult<()> {
 		.allow_headers(Any)
 		.allow_origin(Any);
 
-	let routes_user = routes::user_routes::routes_user::routes(app_state.clone())
+	let routes_user = routes::user::user::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
-	let routes_course = routes::routes_course::routes(app_state.clone())
+	let routes_user_course = routes::user::course::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
-	let routes_lesson = routes::routes_lesson::routes(app_state.clone())
+	let routes_student_course = routes::student::course::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_creator_course = routes::creator::course::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_lesson = routes::creator::lesson::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
 	let routes_all = Router::new()
-		.nest("/api/course", routes_course)
+		.nest("/api/course", routes_user_course)
+		.nest("/api/course", routes_student_course)
+		.nest("/api/course", routes_creator_course)
 		.nest("/api/course/lesson", routes_lesson)
 		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolver))
-		.merge(routes_login::routes(app_state.clone()))
-		.merge(routes_register::routes(app_state.clone()))
+		.merge(login::routes(app_state.clone()))
+		.merge(register::routes(app_state.clone()))
 		.layer(axum_middleware::map_response(mw_reponse_map))
 		.layer(axum_middleware::from_fn(mw_req_stamp_resolver))
 		.nest_service("/", ServeDir::new("public"))
