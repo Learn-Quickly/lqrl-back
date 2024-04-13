@@ -31,14 +31,5 @@ async fn main() -> Result<()> {
 	);
 	req_login.await?.print().await?;
 
-	// -- Logoff
-	let req_logoff = hc.do_post(
-		"/api/logoff",
-		json!({
-			"logoff": true
-		}),
-	);
-	req_logoff.await?.print().await?;
-
 	Ok(())
 }

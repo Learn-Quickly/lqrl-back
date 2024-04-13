@@ -46,6 +46,7 @@ pub enum CourseError {
     CourseMustBePublishedError,
 	CreatorCannotSubscribeToTheCourse,
 	CannotRegisterForCourseTwice,
+	CourseStateDoesNotExist { state: String },
 }
 
 #[derive(Debug, Serialize)]
@@ -59,6 +60,7 @@ pub enum LessonError {
 pub enum UserError {
 	WrongPasswordError { user_id: i64 },
 	UserHasNoPwd { user_id: i64 },
+	RoleDoesNotExist { role: String },
 	
 	#[from]
 	PwdError(PwdError),

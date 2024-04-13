@@ -1,11 +1,10 @@
 use async_trait::async_trait;
-use derive_more::Display;
+use lib_core::core::error::CoreError;
 use lib_core::ctx::Ctx;
 use lib_core::interfaces::course::{ICourseCommandRepository, CourseResult};
-use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, CourseState, UserCourse};
+use lib_core::model::course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole};
 use modql::field::{Fields, HasFields};
-use sea_query::Nullable;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_with::serde_as;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
@@ -17,7 +16,7 @@ use crate::store::dbx::error::DbxError;
 use crate::store::error::DbError;
 use lib_utils::time::{from_unix_timestamp, Rfc3339};
 
-use super::users_courses::{UserCourseRoleRequest, UsersCoursesForDelete, UsersCoursesCommandRepository, UsersCoursesRequest};
+use super::users_courses::{UsersCoursesForDelete, UsersCoursesCommandRepository, UsersCoursesRequest};
 
 #[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize, TypedBuilder)]
@@ -40,12 +39,11 @@ pub struct CourseRequest {
 	#[builder(default, setter(strip_option))]
 	pub img_url: Option<String>,
 	#[builder(default, setter(strip_option))]
-	#[field(cast_as = "course_state")]
-	pub state: Option<CourseStateRequest>,
+	pub state: Option<String>,
 }
 
 impl TryFrom<CourseRequest> for Course {
-	type Error = DbError;
+	type Error = CoreError;
 
 	fn try_from(value: CourseRequest) -> Result<Self, Self::Error> {
 		let entity = "Course".to_string();
@@ -67,51 +65,8 @@ impl TryFrom<CourseRequest> for Course {
     		color,
     		published_date,
     		img_url: value.img_url,
-    		state: state.into(),
+    		state: state.try_into()?,
 		})
-	}
-}
-
-#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize, PartialEq, Eq)]
-#[sqlx(type_name = "course_state")]
-pub enum CourseStateRequest {
-    Draft,
-    Published,
-	Archived,
-	None,
-}
-
-impl From<CourseStateRequest> for sea_query::Value {
-	fn from(value: CourseStateRequest) -> Self {
-		value.to_string().into()
-	}
-}
-
-impl From<CourseStateRequest> for CourseState {
-	fn from(value: CourseStateRequest) -> Self {
-		match value {
-			CourseStateRequest::Draft => Self::Draft,
-			CourseStateRequest::Published => Self::Published,
-			CourseStateRequest::Archived => Self::Archived,
-			CourseStateRequest::None => Self::None,
-		}
-	}
-}
-
-impl From<CourseState> for CourseStateRequest {
-	fn from(value: CourseState) -> Self {
-		match value {
-			CourseState::Draft => CourseStateRequest::Draft,
-			CourseState::Published => CourseStateRequest::Published,
-			CourseState::Archived => CourseStateRequest::Archived,
-			CourseState::None => CourseStateRequest::None,
-		}
-	}
-}
-
-impl Nullable for CourseStateRequest {
-	fn null() -> sea_query::Value {
-		CourseStateRequest::None.into()
 	}
 }
 
@@ -184,7 +139,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		let users_courses_c = UsersCoursesRequest {
     		user_id: ctx.user_id(),
     		course_id: course_id,
-    		user_role: UserCourseRoleRequest::Creator,
+    		user_role: UserCourseRole::Creator.to_string(),
 		};
 
 		UsersCoursesCommandRepository::create(&dbm, users_courses_c).await?;
@@ -215,7 +170,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 			color: course_for_u.color, 
 			img_url: course_for_u.img_url, 
 			published_date,
-			state: course_for_u.state.and_then(|state| Some(state.into())),
+			state: course_for_u.state.and_then(|state| Some(state.to_string())),
 		};
 
 		base::update::<Self, CourseRequest>(&ctx, &self.dbm, course_id, course_req_u)
@@ -228,7 +183,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 	async fn get_user_course(&self, _: &Ctx, user_id: i64, course_id: i64) -> CourseResult<UserCourse> {
 		let user_course_req = UsersCoursesCommandRepository::get(&self.dbm, user_id, course_id).await?;
 
-		Ok(user_course_req.into())
+		Ok(user_course_req.try_into()?)
 	}
 
 	async fn get_user_course_optional(
@@ -239,8 +194,11 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		course_id: i64
 	) -> CourseResult<Option<UserCourse>> {
 		let user_course_req = UsersCoursesCommandRepository::get_optional(&self.dbm, user_id, course_id).await?;
-
-		Ok(user_course_req.and_then(|user_course| Some(user_course.into())))
+		let result = match user_course_req {
+			Some(user_course_req) => Some(user_course_req.try_into()?),
+			None => None,
+		};
+		Ok(result)
 	}
 
 	async fn create_user_course(
@@ -251,7 +209,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		let user_course_req = UsersCoursesRequest { 
 			user_id: users_courses_c.user_id, 
 			course_id: users_courses_c.course_id, 
-			user_role: users_courses_c.user_role.into(),
+			user_role: users_courses_c.user_role.to_string(),
 		};
 
 		UsersCoursesCommandRepository::create(&self.dbm, user_course_req).await?;

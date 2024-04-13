@@ -1,5 +1,7 @@
 use typed_builder::TypedBuilder;
 
+use crate::core::error::{CoreError, CourseError, UserError};
+
 #[derive(Clone)]
 pub struct Course {
     pub id: i64,
@@ -18,7 +20,29 @@ pub enum CourseState {
     Draft,
     Published,
 	Archived,
-    None,
+}
+
+impl TryFrom<String> for CourseState {
+	type Error = CoreError;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		match value.as_str() {
+			"Draft" => Ok(Self::Draft),
+			"Published" => Ok(Self::Published),
+			"Archived" => Ok(Self::Archived),
+			state => Err(CourseError::CourseStateDoesNotExist { state: state.to_string() }.into())
+		}
+	}
+}
+
+impl ToString for CourseState {
+	fn to_string(&self) -> String {
+		match self {
+			CourseState::Draft => "Draft".to_string(),
+			CourseState::Published => "Published".to_string(),
+			CourseState::Archived => "Archived".to_string(),
+		}
+	}
 }
 
 pub struct CourseForCreate {
@@ -68,4 +92,25 @@ pub struct UserCourse {
 pub enum UserCourseRole {
     Student,
     Creator,
+}
+
+impl ToString for UserCourseRole {
+	fn to_string(&self) -> String {
+		match self {
+			UserCourseRole::Student => "Student".to_string(),
+			UserCourseRole::Creator => "Creator".to_string(),
+		}
+	}
+}
+
+impl TryFrom<String> for UserCourseRole {
+	type Error = CoreError;
+
+	fn try_from(value: String) -> Result<UserCourseRole, Self::Error> {
+		match value.as_str() {
+			"Creator" => Ok(UserCourseRole::Creator),
+			"Student" => Ok(UserCourseRole::Student),
+			role => Err(UserError::RoleDoesNotExist { role: role.to_string() }.into())
+		}
+	}
 }

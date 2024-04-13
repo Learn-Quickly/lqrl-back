@@ -1,9 +1,7 @@
-use derive_more::Display;
-use lib_core::model::course::{UserCourse, UserCourseRole};
+use lib_core::{core::error::CoreError, model::course::UserCourse};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
-use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use crate::{base::DbRepository, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
 
@@ -13,52 +11,26 @@ pub enum UserCourseIden {
 	UserId,
 }
 
-#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
-#[sqlx(type_name = "user_course_roles")]
-pub enum UserCourseRoleRequest {
-    Student,
-    Creator,
-}
-
-impl From<UserCourseRoleRequest> for sea_query::Value {
-	fn from(value: UserCourseRoleRequest) -> Self {
-		value.to_string().into()
-	}
-}
-
-impl From<UserCourseRole> for UserCourseRoleRequest {
-	fn from(value: UserCourseRole) -> Self {
-		match value {
-			UserCourseRole::Creator => UserCourseRoleRequest::Creator,
-			UserCourseRole::Student => UserCourseRoleRequest::Student,
-		}
-	}
-}
-
-impl From<UserCourseRoleRequest> for UserCourseRole {
-	fn from(value: UserCourseRoleRequest) -> Self {
-		match value {
-			UserCourseRoleRequest::Creator => UserCourseRole::Creator,
-			UserCourseRoleRequest::Student => UserCourseRole::Student,
-		}
-	}
-}
-
 #[derive(Fields, FromRow)]
 pub struct UsersCoursesRequest {
     pub user_id: i64,
     pub course_id: i64,
-	#[field(cast_as = "user_course_roles")]
-    pub user_role: UserCourseRoleRequest,
+    pub user_role: String,
 }
 
-impl From<UsersCoursesRequest> for UserCourse {
-	fn from(value: UsersCoursesRequest) -> Self {
-		Self {
+impl TryFrom<UsersCoursesRequest> for UserCourse {
+	type Error = CoreError;
+	
+	fn try_from(value: UsersCoursesRequest) -> Result<Self, Self::Error> {
+		let user_role = value.user_role.try_into()?;
+
+		let result = Self {
     		user_id: value.user_id,
     		course_id: value.course_id,
-    		user_role: value.user_role.into(),
-		}
+    		user_role,
+		};
+
+		Ok(result)
 	}
 }
 
