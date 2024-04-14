@@ -265,7 +265,6 @@ async fn api_get_attendants(
 	Query(payload): Query<GetAttendatsPayload>,
 ) -> AppResult<Json<Vec<UserPayload>>> {
 	let ctx = ctx.0;
-	let user_id = ctx.user_id();
 	let course_id = payload.course_id;
 
 	app_state.permission_manager.check_course_creator_permission(&ctx, course_id).await?;
@@ -277,7 +276,7 @@ async fn api_get_attendants(
 	};
 
 	let user_query_repo = app_state.query_repository_manager.get_user_repository();
-	let users = user_query_repo.get_attendants(user_id, course_id, list_options).await?;
+	let users = user_query_repo.get_attendants(course_id, list_options).await?;
 
 	let result = users
 		.iter()

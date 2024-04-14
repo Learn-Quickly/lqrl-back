@@ -1,7 +1,7 @@
 use lib_core::{ctx::Ctx, models::course::UserCourseRole};
 use modql::{field::{Fields, HasFields}, filter::{FilterNodes, ListOptions, OpValsInt64, OpValsString, OpValsValue}};
 use uuid::Uuid;
-use crate::{base::{compute_list_options, idens::{CommonIden, CourseIden, UserCourseIden, UserIden}, table_ref::{get_course_table_ref, get_user_table_ref, get_users_courses_table_ref}}, query_repository::modql_utils::time_to_sea_value, store::db_manager::DbManager};
+use crate::{base::{compute_list_options, idens::{CommonIden, UserCourseIden, UserIden}, table_ref::{get_user_table_ref, get_users_courses_table_ref}}, query_repository::modql_utils::time_to_sea_value, store::db_manager::DbManager};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::Deserialize;
@@ -106,7 +106,6 @@ impl UserQueryRepository {
 
 	pub async fn get_attendants(
 		&self,
-		user_id: i64,
 		course_id: i64,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<User>> {
