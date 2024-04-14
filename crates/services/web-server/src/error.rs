@@ -96,11 +96,11 @@ impl AppError {
 				let db_error: Result<DbError, serde_json::Error> = serde_json::from_value(value.clone());
 				match db_error {
 					Ok(db_error) => map_db_error(&db_error),
-					Err(json_error) => internal_server_error(json_error.to_string()),
+					Err(_) => internal_server_error(),
 				}
 			},
 			// -- Fallback.
-			_ => internal_server_error(self.to_string()),
+			_ => internal_server_error(),
 		}
 	}
 }
@@ -125,7 +125,7 @@ fn map_db_error(db_error: &DbError) -> (StatusCode, ClientError) {
 		DbError::UniqueViolation { .. } |
 		DbError::CourseStateMustBePublished { .. } | 
 		DbError::MissingFieldError { .. } => bad_request(db_error.to_string()),
-		_ => internal_server_error(db_error.to_string()),
+		_ => internal_server_error(),
 	}
 }
 
@@ -138,12 +138,10 @@ fn bad_request(description: String) -> (StatusCode, ClientError) {
 	)
 }
 
-fn internal_server_error(description: String) -> (StatusCode, ClientError) {
+fn internal_server_error() -> (StatusCode, ClientError) {
 	(
 		StatusCode::INTERNAL_SERVER_ERROR,
-		ClientError::SERVICE_ERROR {
-			description,
-		},
+		ClientError::SERVICE_ERROR,
 	)
 }
 
@@ -162,5 +160,5 @@ pub enum ClientError {
 
 	BAD_REQUEST { description: String },
 
-	SERVICE_ERROR { description: String },
+	SERVICE_ERROR,
 }

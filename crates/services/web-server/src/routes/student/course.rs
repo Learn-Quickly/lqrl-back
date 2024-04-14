@@ -98,7 +98,10 @@ async fn api_get_user_courses_registered_handler(
 
 	let course_query_repository = app_state.query_repository_manager.get_course_repository();
 	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_registered(&ctx, user_id).await?;
-	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
+	let mut body: Vec<CoursePayload> = Vec::new();
+	for course in courses {
+		body.push(course.try_into()?)
+	}
 
 	Ok(Json(body))
 }

@@ -1,8 +1,9 @@
-use lib_db::query_repository::course::{CourseQuery, CourseStateQuery};
+use lib_core::interactors::error::{CoreError, CourseError};
+use lib_db::query_repository::course::CourseQuery;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -54,25 +55,28 @@ pub enum CourseStatePayload {
     Draft,
     Published,
 	Archived,
-    None,
 }
 
-impl From<CourseStateQuery> for CourseStatePayload {
-	fn from(value: CourseStateQuery) -> Self {
-		match value {
-			CourseStateQuery::Draft => Self::Draft,
-			CourseStateQuery::Published => Self::Published,
-			CourseStateQuery::Archived => Self::Archived,
-			CourseStateQuery::None => Self::None,
+impl TryFrom<String> for CourseStatePayload {
+	type Error = CoreError;
+	
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		match value.as_str() {
+			"Draft" => Ok(Self::Draft),
+			"Published" => Ok(Self::Published),
+			"Archived" => Ok(Self::Archived),
+			state => Err(CourseError::CourseStateDoesNotExist { state: state.to_string() }.into())
 		}
 	}
 }
 
-impl From<CourseQuery> for CoursePayload {
-	fn from(value: CourseQuery) -> Self {
+impl TryFrom<CourseQuery> for CoursePayload {
+	type Error = CoreError;
+	
+	fn try_from(value: CourseQuery) -> Result<Self, Self::Error> {
 		let published_date = value.published_date.and_then(|date| Some(date.unix_timestamp()));
 
-		Self {
+		let result = Self {
     		id: value.id,
     		title: value.title,
     		description: value.description,
@@ -81,15 +85,17 @@ impl From<CourseQuery> for CoursePayload {
     		color: value.color,
     		published_date,
     		img_url: value.img_url,
-    		state: value.state.into(),
-		}
+    		state: value.state.try_into()?,
+		};
+
+		Ok(result)
 	}
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct CourseFilterPayload {
-	#[schema(example = r#"{"price": {"$gte": 1000}}""#)]
+    #[param(value_type = Object)]
 	pub filters: Option<Value>,
-	#[schema(example = r#"{"limit": 2, "offset": 0, "order_bys": "!title"}""#)]
+	#[param(value_type = Object)]
 	pub list_options: Option<Value>,
 }

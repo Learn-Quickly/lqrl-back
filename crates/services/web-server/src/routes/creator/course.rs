@@ -1,9 +1,9 @@
-use axum::{debug_handler, extract::{Multipart, Path, State}, routing::{get, post, put}, Json, Router};
+use axum::{debug_handler, extract::{Multipart, Path, Query, State}, routing::{get, post, put}, Json, Router};
 use lib_core::{interactors::creator::course::CreatorCourseInteractor, models::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseCreateDraftPayload, CourseId, CoursePayload, CourseUpdatePayload, CreatedCourseDraft}};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::{course::{CourseCreateDraftPayload, CourseId, CoursePayload, CourseUpdatePayload, CreatedCourseDraft}, user::{GetAttendatsPayload, UserPayload}}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
@@ -13,6 +13,7 @@ pub fn routes(app_state: AppState) -> Router {
 		.route("/publish_course", put(api_publish_course_handler))
 		.route("/archive_course", put(api_archive_course_handler))
 		.route("/get_created_courses", get(api_get_created_courses_handler))
+		.route("/get_attendants", get(api_get_attendants))
 		.with_state(app_state)
 }
 
@@ -237,7 +238,51 @@ async fn api_get_created_courses_handler(
 
 	let course_query_repository = app_state.query_repository_manager.get_course_repository();
 	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_created(&ctx, user_id).await?;
-	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
+	let mut body: Vec<CoursePayload> = Vec::new();
+	for course in courses {
+		body.push(course.try_into()?)
+	}
 
 	Ok(Json(body))
+}
+
+#[utoipa::path(
+	get,
+	path = "/api/course/get_attendants",
+	params(
+		GetAttendatsPayload,	
+	),
+	responses(
+		(status = 200, body = Vec<UserPayload>),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_get_attendants(
+	ctx: CtxW,
+	State(app_state): State<AppState>,
+	Query(payload): Query<GetAttendatsPayload>,
+) -> AppResult<Json<Vec<UserPayload>>> {
+	let ctx = ctx.0;
+	let user_id = ctx.user_id();
+	let course_id = payload.course_id;
+
+	app_state.permission_manager.check_course_creator_permission(&ctx, course_id).await?;
+
+	let list_options = if let Some(list_options) = payload.list_options {
+		serde_json::from_value(list_options)?
+	} else {
+		None
+	};
+
+	let user_query_repo = app_state.query_repository_manager.get_user_repository();
+	let users = user_query_repo.get_attendants(user_id, course_id, list_options).await?;
+
+	let result = users
+		.iter()
+		.map(|user| UserPayload { id: user.id, username: user.username.clone() })
+		.collect();
+
+	Ok(Json(result))
 }

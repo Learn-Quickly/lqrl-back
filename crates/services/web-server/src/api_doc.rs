@@ -33,6 +33,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson}
 		creator_course::api_publish_course_handler,
 		creator_course::api_archive_course_handler,
 		creator_course::api_get_created_courses_handler,
+		creator_course::api_get_attendants,
 
 		// Course student
 		student_course::api_register_for_course_handler,
@@ -51,6 +52,8 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson}
 			user::UserDataPayload,
 			user::UserUpdatePayload,
 			user::UserChangePwdPayload,
+			models::user::GetAttendatsPayload,
+			models::user::UserPayload,
 			register::RegisterPayload,
 			login::RefreshTokenPayload,
 

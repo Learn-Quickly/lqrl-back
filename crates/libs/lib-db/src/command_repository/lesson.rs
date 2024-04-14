@@ -7,11 +7,11 @@ use lib_core::{
     }
 };
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, FromRow};
 
-use crate::{base::{self, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+use crate::{base::{self, idens::LessonIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
 
 #[derive(Clone, Fields, FromRow, Debug)]
 struct LessonData {
@@ -37,12 +37,6 @@ struct LessonForUpdateOrder {
 #[derive(Fields)]
 struct LessonForUpdateData {
     pub title: String,
-}
-
-#[derive(Iden)]
-enum LessonIden {
-	CourseId,
-    LessonOrder,
 }
 
 pub trait LessonBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}

@@ -1,14 +1,13 @@
-use derive_more::Display;
 use lib_core::ctx::Ctx;
 use modql::field::{Fields, HasFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
-use sea_query::{Expr, Nullable, PostgresQueryBuilder, Query};
+use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::FromRow;
 use time::OffsetDateTime;
-use crate::base::CommonIden;
+use crate::base::idens::CommonIden;
 use crate::query_repository::modql_utils::time_to_sea_value;
 use crate::store::db_manager::DbManager;
 use lib_utils::time::Rfc3339;
@@ -29,29 +28,7 @@ pub struct CourseQuery {
 	#[serde_as(as = "Option<Rfc3339>")]
 	pub published_date: Option<OffsetDateTime>,
 	pub img_url: Option<String>,
-	#[field(cast_as = "course_state")]
-	pub state: CourseStateQuery,
-}
-
-#[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
-#[sqlx(type_name = "course_state")]
-pub enum CourseStateQuery {
-    Draft,
-    Published,
-	Archived,
-	None,
-}
-
-impl From<CourseStateQuery> for sea_query::Value {
-	fn from(value: CourseStateQuery) -> Self {
-		value.to_string().into()
-	}
-}
-
-impl Nullable for CourseStateQuery {
-	fn null() -> sea_query::Value {
-		CourseStateQuery::None.into()
-	}
+	pub state: String,
 }
 
 #[derive(FilterNodes, Deserialize, Default, Debug)]

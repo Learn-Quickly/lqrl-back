@@ -1,4 +1,4 @@
-use axum::{extract::{Path, Query, State}, routing::{get, post}, Json, Router};
+use axum::{extract::{Path, Query, State}, routing::get, Json, Router};
 use lib_db::query_repository::course::CourseQuery;
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseFilterPayload, CoursePayload}};
@@ -33,15 +33,14 @@ async fn api_get_course_handler(
 	let course_query_repository = app_state.query_repository_manager.get_course_repository();
 	let course = course_query_repository.get(&ctx, course_id).await?;
 
-	Ok(Json(course.into()))
+	Ok(Json(course.try_into()?))
 }
 
 #[utoipa::path(
 	get,
 	path = "/api/course/get_courses/",
 	params(
-		("filters", description = "List of filters"),
-		("list_options", description = "Contains offset, limit, order_bys"),
+		CourseFilterPayload
 	),
 	// params(
 	// 	("filter_payload", description = 
@@ -79,7 +78,11 @@ async fn api_get_courses_handler(
 
 	let course_query_repository = app_state.query_repository_manager.get_course_repository();
 	let courses: Vec<CourseQuery> = course_query_repository.list(&ctx, filters, list_options).await?;
-	let body: Vec<CoursePayload> = courses.iter().map(|course| course.clone().into()).collect();  
+
+	let mut body: Vec<CoursePayload> = Vec::new();
+	for course in courses {
+		body.push(course.try_into()?)
+	}
 
 	Ok(Json(body))
 }

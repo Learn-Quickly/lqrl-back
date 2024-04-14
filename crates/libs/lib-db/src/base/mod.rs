@@ -1,4 +1,5 @@
-// region:    --- Modules
+pub mod table_ref;
+pub mod idens;
 
 mod crud_fns;
 mod macro_utils;
@@ -9,34 +10,10 @@ pub use crud_fns::*;
 pub use utils::*;
 
 use modql::SIden;
-use sea_query::{Iden, IntoIden, TableRef};
-
-// endregion: --- Modules
-
-// region:    --- Consts
+use sea_query::{IntoIden, TableRef};
 
 const LIST_LIMIT_DEFAULT: i64 = 1000;
 const LIST_LIMIT_MAX: i64 = 5000;
-
-// endregion: --- Consts
-
-// region:    --- SeaQuery Idens
-
-#[derive(Iden)]
-pub enum CommonIden {
-	Id,
-	OwnerId,
-}
-
-#[derive(Iden)]
-pub enum TimestampIden {
-	Cid,
-	Ctime,
-	Mid,
-	Mtime,
-}
-
-// endregion: --- SeaQuery Idens
 
 /// The DbRepository trait must be implemented for the Bmc struct of an entity.
 /// It specifies meta information such as the table name,

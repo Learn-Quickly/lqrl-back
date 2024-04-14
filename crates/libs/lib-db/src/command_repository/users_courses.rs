@@ -1,15 +1,9 @@
 use lib_core::{interactors::error::CoreError, models::course::UserCourse};
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::prelude::FromRow;
-use crate::{base::DbRepository, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
-
-#[derive(Iden)]
-pub enum UserCourseIden {
-	CourseId,
-	UserId,
-}
+use crate::{base::{idens::UserCourseIden, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
 
 #[derive(Fields, FromRow)]
 pub struct UsersCoursesRequest {

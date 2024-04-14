@@ -38,7 +38,7 @@ impl PermissionManager {
         let user_id = ctx.user_id();
 
         // admin
-        if user_id == 0 {
+        if user_id == 1000 {
             return Ok(());
         }
 

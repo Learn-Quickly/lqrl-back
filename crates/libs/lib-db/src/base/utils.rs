@@ -1,7 +1,9 @@
-use crate::base::{CommonIden, DbRepository, TimestampIden};
+use crate::base::DbRepository;
 use lib_utils::time::now_utc;
 use modql::field::{Field, Fields};
 use sea_query::IntoIden;
+
+use super::idens::{CommonIden, TimestampIden};
 
 /// This method must be called when a model controller intends to create its entity.
 pub fn prep_fields_for_create<MC>(fields: &mut Fields, user_id: i64)

@@ -1,16 +1,10 @@
 use derive_more::Display;
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use crate::{base::DbRepository, store::{db_manager::DbManager, error::DbResult}};
-
-#[derive(Iden)]
-pub enum UserCourseIden {
-	UserId,
-    UserRole,
-}
+use crate::{base::{idens::UserCourseIden, DbRepository}, store::{db_manager::DbManager, error::DbResult}};
 
 #[derive(Debug, Clone, Display, sqlx::Type, Deserialize, Serialize)]
 #[sqlx(type_name = "user_course_roles")]

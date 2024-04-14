@@ -1,5 +1,5 @@
 use crate::base::{
-	prep_fields_for_create, prep_fields_for_update, CommonIden, DbRepository,
+	prep_fields_for_create, prep_fields_for_update, DbRepository,
 	LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX,
 };
 use crate::store::db_manager::DbManager;
@@ -12,6 +12,8 @@ use sea_query::{Condition, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::postgres::PgRow;
 use sqlx::FromRow;
+
+use super::idens::CommonIden;
 
 pub async fn create<MC, E>(ctx: &Ctx, dbm: &DbManager, data: E) -> DbxResult<i64>
 where
