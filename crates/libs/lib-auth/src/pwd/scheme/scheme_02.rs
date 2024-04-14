@@ -1,4 +1,4 @@
-use super::{Error, Result};
+use super::{PwdSchemeError, Result};
 use crate::config::auth_config;
 use crate::pwd::scheme::Scheme;
 use argon2::password_hash::SaltString;
@@ -15,11 +15,11 @@ impl Scheme for Scheme02 {
 		let argon2 = get_argon2();
 
 		let salt_b64 = SaltString::encode_b64(to_hash.salt.as_bytes())
-			.map_err(|_| Error::Salt)?;
+			.map_err(|_| PwdSchemeError::Salt)?;
 
 		let pwd = argon2
 			.hash_password(to_hash.content.as_bytes(), &salt_b64)
-			.map_err(|_| Error::Hash)?
+			.map_err(|_| PwdSchemeError::Hash)?
 			.to_string();
 
 		Ok(pwd)
@@ -32,11 +32,11 @@ impl Scheme for Scheme02 {
 	) -> Result<()> {
 		let argon2 = get_argon2();
 
-		let parsed_hash_ref = PasswordHash::new(pwd_ref).map_err(|_| Error::Hash)?;
+		let parsed_hash_ref = PasswordHash::new(pwd_ref).map_err(|_| PwdSchemeError::Hash)?;
 
 		argon2
 			.verify_password(to_hash.content.as_bytes(), &parsed_hash_ref)
-			.map_err(|_| Error::PwdValidate)
+			.map_err(|_| PwdSchemeError::PwdValidate)
 	}
 }
 

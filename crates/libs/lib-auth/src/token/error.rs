@@ -1,9 +1,9 @@
 use serde::Serialize;
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, TokenError>;
 
 #[derive(Debug, Serialize)]
-pub enum Error {
+pub enum TokenError {
 	HmacFailNewFromSlice,
 
 	InvalidFormat,
@@ -15,7 +15,7 @@ pub enum Error {
 }
 
 // region:    --- Error Boilerplate
-impl core::fmt::Display for Error {
+impl core::fmt::Display for TokenError {
 	fn fmt(
 		&self,
 		fmt: &mut core::fmt::Formatter,
@@ -24,5 +24,5 @@ impl core::fmt::Display for Error {
 	}
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for TokenError {}
 // endregion: --- Error Boilerplate

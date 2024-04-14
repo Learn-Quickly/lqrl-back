@@ -1,11 +1,11 @@
 use crate::pwd::scheme;
 use derive_more::From;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, PwdError>;
 
-#[derive(Debug, Serialize, From)]
-pub enum Error {
+#[derive(Debug, Serialize, Deserialize, From)]
+pub enum PwdError {
 	PwdWithSchemeFailedParse,
 
 	FailSpawnBlockForValidate,
@@ -13,11 +13,11 @@ pub enum Error {
 
 	// -- Modules
 	#[from]
-	Scheme(scheme::Error),
+	Scheme(scheme::PwdSchemeError),
 }
 
 // region:    --- Error Boilerplate
-impl core::fmt::Display for Error {
+impl core::fmt::Display for PwdError {
 	fn fmt(
 		&self,
 		fmt: &mut core::fmt::Formatter,
@@ -26,5 +26,5 @@ impl core::fmt::Display for Error {
 	}
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for PwdError {}
 // endregion: --- Error Boilerplate

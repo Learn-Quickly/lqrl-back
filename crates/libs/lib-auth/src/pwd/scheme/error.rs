@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, PwdSchemeError>;
 
-#[derive(Debug, Serialize)]
-pub enum Error {
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PwdSchemeError {
 	Key,
 	Salt,
 	Hash,
@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 // region:    --- Error Boilerplate
-impl core::fmt::Display for Error {
+impl core::fmt::Display for PwdSchemeError {
 	fn fmt(
 		&self,
 		fmt: &mut core::fmt::Formatter,
@@ -21,5 +21,5 @@ impl core::fmt::Display for Error {
 	}
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for PwdSchemeError {}
 // endregion: --- Error Boilerplate
