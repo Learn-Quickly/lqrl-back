@@ -25,4 +25,4 @@ Params:
 - course_id - path parameter
 - form_data, Key = "image", type = file 
 
-![alt text](image.png)
+![alt text](asset/img/image.png)
