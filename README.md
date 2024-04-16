@@ -16,3 +16,13 @@ All fields are optional
     ``` list_options: {"limit": 5, "offset": 2, "order_bys": "!price"} ```
 
 documentation: https://lib.rs/crates/modql
+
+
+### /api/course/set_course_img/:course_id
+
+Params: 
+
+- course_id - path parameter
+- form_data, Key = "image", type = file 
+
+![alt text](image.png)
