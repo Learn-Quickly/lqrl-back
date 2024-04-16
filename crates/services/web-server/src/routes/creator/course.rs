@@ -1,4 +1,4 @@
-use axum::{debug_handler, extract::{Multipart, Path, Query, State}, routing::{get, post, put}, Json, Router};
+use axum::{extract::{Multipart, Path, Query, State}, routing::{get, post, put}, Json, Router};
 use lib_core::{interactors::creator::course::CreatorCourseInteractor, models::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
@@ -177,7 +177,6 @@ async fn api_archive_course_handler(
 		("bearerAuth" = [])
 	)
 )]
-#[debug_handler]
 async fn api_set_course_img_handler(
 	ctx: CtxW,
 	State(app_state): State<AppState>,

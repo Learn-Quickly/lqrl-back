@@ -1,5 +1,6 @@
 use axum::{extract::{Path, Query, State}, routing::get, Json, Router};
 use lib_db::query_repository::course::CourseQuery;
+use tracing::info;
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseFilterPayload, CoursePayload}};
 
@@ -42,14 +43,6 @@ async fn api_get_course_handler(
 	params(
 		CourseFilterPayload
 	),
-	// params(
-	// 	("filter_payload", description = 
-	// 		"It contains two optional fields:\n
-	// 			1) filters - list of filters\n
-	// 			2) list_options - contains offset, limit, order_bys\n
-	// 		Documentation: https://lib.rs/crates/modql"
-	// 	),
-	// ),
 	responses(
 		(status = 200, body = Vec<CoursePayload>),
 	),
@@ -64,14 +57,15 @@ async fn api_get_courses_handler(
 ) -> AppResult<Json<Vec<CoursePayload>>> {
 	let ctx = ctx.0;
 
-	let filters = if let Some(filters) = filter_payload.filters {
-		serde_json::from_value(filters)?
+	let filters = if let Some(filters) = filter_payload.filters{
+		info!(filters);
+		serde_json::from_str(&filters)?
 	} else {
 		None
 	};
 
 	let list_options = if let Some(list_options) = filter_payload.list_options {
-		serde_json::from_value(list_options)?
+		serde_json::from_str(&list_options)?
 	} else {
 		None
 	};

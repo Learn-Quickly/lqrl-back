@@ -1,7 +1,6 @@
 use lib_core::interactors::error::{CoreError, CourseError};
 use lib_db::query_repository::course::CourseQuery;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use serde_with::serde_as;
 use utoipa::{IntoParams, ToSchema};
 
@@ -94,8 +93,6 @@ impl TryFrom<CourseQuery> for CoursePayload {
 
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct CourseFilterPayload {
-    #[param(value_type = Object)]
-	pub filters: Option<Value>,
-	#[param(value_type = Object)]
-	pub list_options: Option<Value>,
+	pub filters: Option<String>,
+	pub list_options: Option<String>,
 }
