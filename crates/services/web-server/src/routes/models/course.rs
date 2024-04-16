@@ -93,6 +93,8 @@ impl TryFrom<CourseQuery> for CoursePayload {
 
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct CourseFilterPayload {
+	#[param(example = "[{\"price\": {\"$gte\": 40, \"$lte\": 70}}, {\"color\": {\"$eq\": \"indigo\"}}]")]
 	pub filters: Option<String>,
+	#[param(example = "{\"limit\": 5, \"offset\": 2, \"order_bys\": \"!price\"}")]
 	pub list_options: Option<String>,
 }

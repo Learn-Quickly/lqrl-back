@@ -9,6 +9,8 @@ pub struct UserPayload {
 
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct GetAttendatsPayload {
+    #[param(example = 1000)]
     pub course_id: i64,
+    #[param(example = "{\"limit\": 5, \"offset\": 2}")]
 	pub list_options: Option<String>,
 }

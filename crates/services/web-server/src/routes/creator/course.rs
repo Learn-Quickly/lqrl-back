@@ -220,7 +220,7 @@ async fn api_set_course_img_handler(
 
 #[utoipa::path(
 	get,
-	path = "/api/course/get_created_courses/",
+	path = "/api/course/get_created_courses",
 	responses(
 		(status = 200, body=Vec<CoursePayload>),
 	),
