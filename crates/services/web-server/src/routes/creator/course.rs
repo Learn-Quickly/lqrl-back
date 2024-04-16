@@ -197,7 +197,7 @@ async fn api_set_course_img_handler(
 		
         if field_name == "image" {
             let data = field.bytes().await?;
-			let img_url = course_interactor.set_course_img(&ctx, course_id, &data, "/public/uploads").await?;
+			let img_url = course_interactor.set_course_img(&ctx, course_id, &data).await?;
 
 			let body = Json(json!({
 				"result": {
@@ -269,7 +269,7 @@ async fn api_get_attendants(
 	app_state.permission_manager.check_course_creator_permission(&ctx, course_id).await?;
 
 	let list_options = if let Some(list_options) = payload.list_options {
-		serde_json::from_value(list_options)?
+		serde_json::from_str(&list_options)?
 	} else {
 		None
 	};

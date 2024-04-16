@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, ToSchema)]
@@ -11,7 +10,5 @@ pub struct UserPayload {
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct GetAttendatsPayload {
     pub course_id: i64,
-
-	#[param(value_type = Object)]
-	pub list_options: Option<Value>,
+	pub list_options: Option<String>,
 }
