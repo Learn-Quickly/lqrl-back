@@ -9,6 +9,11 @@ pub struct LessonCreatedPayload {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+pub struct StartLessonPayload {
+    pub lesson_id: i64,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LessonCreatePayload {
     pub course_id: i64,
     pub title: String,

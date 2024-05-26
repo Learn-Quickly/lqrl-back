@@ -16,6 +16,8 @@ pub enum CoreError {
 	#[from]
 	LessonError(LessonError),
 	#[from]
+	LessonProgressError(LessonProgressError),
+	#[from]
 	UserError(UserError),
 
 	// File error
@@ -52,7 +54,14 @@ pub enum CourseError {
 #[derive(Debug, Serialize)]
 pub enum LessonError {
 	IncorrectLessonOreder { lesson_id: i64, order: i32 },
+    PreviousLessonNotCompleted { lesson_id: i64 },
+	PreviousLessonNotFound { lesson_id: i64 },
 	LessonNotFound { lesson_id: i64 },
+}
+
+#[derive(Debug, Serialize)]
+pub enum LessonProgressError {
+	LessonProgressStateDoesNotExist { state: String },
 }
 
 #[serde_as]

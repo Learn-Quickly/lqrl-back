@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use lib_core::{
     ctx::Ctx, 
     interfaces::lesson::{ILessonCommandRepository, LessonResult}, 
-    models::lesson::{
+    models::{lesson::{
         Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate
-    }
+    }, lesson_progress::LessonProgress}
 };
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
@@ -12,6 +12,8 @@ use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, FromRow};
 
 use crate::{base::{self, idens::LessonIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+
+use super::lesson_progress::LessonProgressCommandRepository;
 
 #[derive(Clone, Fields, FromRow, Debug)]
 struct LessonData {
@@ -105,6 +107,33 @@ impl ILessonCommandRepository for LessonCommandRepository {
         Ok(result)
     }
 
+    async fn create_lesson_progress(
+        &self,
+        ctx: &Ctx, 
+        lesson_id: i64, 
+        user_id: i64
+    ) -> LessonResult<()> {
+        LessonProgressCommandRepository::create(ctx, &self.dbm, user_id, lesson_id).await?;
+        Ok(())
+    }
+
+    async fn get_lesson_progresses(
+        &self,
+        ctx: &Ctx,
+        course_id: i64, 
+        user_id: i64
+    ) -> LessonResult<Vec<LessonProgress>> {
+        let lesson_progresses_data = LessonProgressCommandRepository::get_lesson_progresses(&self.dbm, &ctx, course_id, user_id)
+            .await?;
+
+        let mut result = Vec::new();
+        for lesson_progress_date in &lesson_progresses_data {
+            result.push(lesson_progress_date.try_into()?)
+        }
+
+        Ok(result)
+    }
+    
     async fn create_lesson(
         &self,
         ctx: &Ctx,

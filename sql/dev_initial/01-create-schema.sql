@@ -65,7 +65,7 @@ CREATE TABLE lesson (
 
 -- Lessons completed 
 CREATE TABLE lesson_progress (
-  user_course_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
   lesson_id BIGINT NOT NULL,
 
   date_started timestamp with time zone NOT NULL,
@@ -73,8 +73,8 @@ CREATE TABLE lesson_progress (
 
   state varchar(256) NOT NULL default 'InProgress', 
 
-  PRIMARY KEY (user_course_id, lesson_id),
-  CONSTRAINT fk_users_courses FOREIGN KEY (user_course_id) REFERENCES users_courses(id),
+  PRIMARY KEY (user_id, lesson_id),
+  CONSTRAINT fk_users_courses FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE,
   CONSTRAINT fk_lesson FOREIGN KEY (lesson_id) REFERENCES lesson(id)
 );
 

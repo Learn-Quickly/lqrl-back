@@ -1,7 +1,13 @@
 use async_trait::async_trait;
 
-use crate::{interactors::error::CoreError, ctx::Ctx, models::lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}};
-
+use crate::{
+    ctx::Ctx, interactors::error::CoreError, 
+    models::{
+        lesson::{
+            Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}, 
+            lesson_progress::LessonProgress
+    }
+};
 
 pub type LessonResult<T> = core::result::Result<T, CoreError>;
 
@@ -10,6 +16,10 @@ pub trait ILessonCommandRepository {
     async fn get_lesson(&self, ctx: &Ctx, lesson_id: i64) -> LessonResult<Lesson>;
 
     async fn get_course_lessons_ordered(&self, ctx: &Ctx, course_id: i64) -> LessonResult<Vec<LessonForChangeOreder>>;
+
+    async fn create_lesson_progress(&self, ctx: &Ctx, lesson_id: i64, user_id: i64) -> LessonResult<()>;
+    
+    async fn get_lesson_progresses(&self, ctx: &Ctx, course_id: i64, user_id: i64) -> LessonResult<Vec<LessonProgress>>;
 
     async fn create_lesson(&self, ctx: &Ctx, lesson_for_c: LessonForCreateCommand) -> LessonResult<i64>;
 

@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use lib_core::{interactors::error::{CoreError, LessonError}, ctx::Ctx, interfaces::{course::{CourseResult, ICourseCommandRepository}, lesson::{ILessonCommandRepository, LessonResult}, user::{IUserCommandRepository, UserResult}}, models::{course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole}, lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}, user::{User, UserForCreate, UserForUpdate}}};
+use lib_core::{ctx::Ctx, interactors::error::{CoreError, LessonError}, interfaces::{course::{CourseResult, ICourseCommandRepository}, lesson::{ILessonCommandRepository, LessonResult}, user::{IUserCommandRepository, UserResult}}, models::{course::{Course, CourseForCreate, CourseForUpdateCommand, UserCourse, UserCourseRole}, lesson::{Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate}, lesson_progress::LessonProgress, user::{User, UserForCreate, UserForUpdate}}};
 
 #[derive(Clone)]
 pub struct CourseCommandRepositoryMock;
@@ -114,6 +114,14 @@ impl ILessonCommandRepository for LessonCommandRepositoryMock {
     }
 
     async fn update_lesson(&self, _: &Ctx, _: LessonForUpdate) -> LessonResult<()> {
+        panic!()
+    }
+
+    async fn create_lesson_progress(&self, _: &Ctx, _: i64, _: i64) -> LessonResult<()> {
+        panic!()
+    }
+    
+    async fn get_lesson_progresses(&self, _: &Ctx, _: i64, _: i64) -> LessonResult<Vec<LessonProgress>> {
         panic!()
     }
 }
