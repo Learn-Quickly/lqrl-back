@@ -36,6 +36,14 @@ pub enum UserCourseIden {
 
 #[derive(Iden)]
 pub enum LessonIden {
+	Lesson,
 	CourseId,
     LessonOrder,
+}
+
+#[derive(Iden)]
+pub enum LessonProgressIden {
+	LessonProgress,
+	LessonId,
+	UserId,
 }

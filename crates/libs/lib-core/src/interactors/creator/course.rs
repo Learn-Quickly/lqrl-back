@@ -63,7 +63,6 @@ impl CreatorCourseInteractor {
         ctx: &Ctx,
         course_id: i64,
         file_data: &[u8],
-        file_path: &str,
     ) -> CourseResult<String> {
         self.permission_manager.check_course_creator_permission(ctx, course_id).await?;
 
@@ -71,7 +70,7 @@ impl CreatorCourseInteractor {
 
         let course = course_repository.get_course(ctx, course_id).await?;
 
-        let new_img_url = upload_file(file_path, file_data).await?;
+        let new_img_url = upload_file(file_data).await?;
 
         let course_for_u = CourseForUpdateCommand::builder()
             .img_url(new_img_url.clone())

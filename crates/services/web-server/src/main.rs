@@ -56,14 +56,26 @@ async fn main() -> AppResult<()> {
 	let routes_creator_course = routes::creator::course::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
-	let routes_lesson = routes::creator::lesson::routes(app_state.clone())
+	let routes_creator_lesson = routes::creator::lesson::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_user_lesson = routes::user::lesson::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_student_lesson = routes::student::lesson::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
+	let routes_student_lesson_progress = routes::student::lesson_progress::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
 	let routes_all = Router::new()
 		.nest("/api/course", routes_user_course)
 		.nest("/api/course", routes_student_course)
 		.nest("/api/course", routes_creator_course)
-		.nest("/api/course/lesson", routes_lesson)
+		.nest("/api/course/lesson", routes_creator_lesson)
+		.nest("/api/course/lesson", routes_user_lesson)
+		.nest("/api/course/lesson", routes_student_lesson)
+		.nest("/api/course/lesson", routes_student_lesson_progress)
 		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolver))
 		.merge(login::routes(app_state.clone()))

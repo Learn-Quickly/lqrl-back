@@ -41,3 +41,4 @@ report.*.json
 *.jpg
 *.gif
 *.png
+!asset/img/*.png
