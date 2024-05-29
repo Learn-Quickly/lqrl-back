@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{Exercise, ExerciseForCreateCommand, ExerciseForUpdate}};
+use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{Exercise, ExerciseForChangeOrder, ExerciseForCreateCommand, ExerciseForUpdate}};
 
 
 pub struct CreatorExerciseInteractor {
@@ -76,5 +76,84 @@ impl CreatorExerciseInteractor {
         let exercise_repository = self.repository_manager.get_exercise_repository();
 
         exercise_repository.update(ctx, exercise_for_u).await
+    }
+
+    pub async fn change_order(
+        &self, 
+        ctx: &Ctx,
+        exercise_for_u_order: ExerciseForChangeOrder, 
+    ) -> ExerciseResult<()> {
+        self.permission_manager
+            .check_exercise_creator_permission(ctx, exercise_for_u_order.id)
+            .await?;
+
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let exercise = exercise_repository.get_exercise(ctx, exercise_for_u_order.id).await?;
+
+        let lesson_exercises = exercise_repository
+            .get_lesson_exercises_ordered(ctx, exercise.lesson_id)
+            .await?;
+
+        let lesson_exercises = self.compute_orders(&lesson_exercises, &exercise_for_u_order)?;
+        exercise_repository.update_exercise_orders(ctx, lesson_exercises).await?;
+
+        Ok(())
+    }
+
+    fn compute_orders(
+        &self,
+        exercises: &Vec<ExerciseForChangeOrder>, 
+        exercise_for_u_order: &ExerciseForChangeOrder
+    ) -> ExerciseResult<Vec<ExerciseForChangeOrder>> {
+        let number_of_exercises = exercises.len() as i32;
+        if number_of_exercises < exercise_for_u_order.order {
+            return Err(
+                ExerciseError::IncorrectExerciseOreder { 
+                    exercise_id: exercise_for_u_order.id,
+                    order: exercise_for_u_order.order 
+                }.into()
+            );
+        }
+
+        let mut result = Vec::new();
+        let mut d_order = 0;
+
+        for exercise in exercises {
+            let order = if exercise.id == exercise_for_u_order.id {
+                d_order = if d_order != 0 {
+                    0
+                } else {
+                    -1
+                };
+
+                exercise_for_u_order.order
+            } else if exercise.order == exercise_for_u_order.order {
+                let order = if d_order == 0 {
+                    exercise.order + 1
+                } else {
+                    exercise.order - 1
+                };
+                d_order += 1;
+
+                order 
+            } else {
+                let order = exercise.order + d_order;
+
+                if exercise.order == exercise_for_u_order.order {
+                    d_order = 0;
+                }
+
+                order
+            };
+
+            let new_order = ExerciseForChangeOrder {
+                id: exercise.id,
+                order,
+            };
+
+            result.push(new_order);
+        }
+
+        Ok(result)
     }
 }

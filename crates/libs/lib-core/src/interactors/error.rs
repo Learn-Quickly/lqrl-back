@@ -77,6 +77,7 @@ pub enum ExerciseError {
 	NotEnoughNodesError { number_of_nodes: usize },
 	CannotUpdateExerciseBodyWithoutType,
 	CannotUpdateExercisetypeWithoutBody,
+    IncorrectExerciseOreder { exercise_id: i64, order: i32 },
 }
 
 #[serde_as]

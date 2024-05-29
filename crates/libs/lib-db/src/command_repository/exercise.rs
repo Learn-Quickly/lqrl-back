@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::exercise::{ExerciseForChangeOreder, ExerciseForCreateCommand}};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
@@ -62,6 +62,11 @@ struct ExerciseForUpdateBody {
     pub body: Value,
 }
 
+#[derive(Fields)]
+struct ExerciseForUpdateOrder {
+    pub exercise_order: i32,
+}
+
 pub trait ExerciseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl ExerciseBy for ExerciseData {}
@@ -98,7 +103,7 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
         &self,
         _: &Ctx,
         lesson_id: i64
-    ) ->  ExerciseResult<Vec<ExerciseForChangeOreder>> {
+    ) ->  ExerciseResult<Vec<ExerciseForChangeOrder>> {
         let mut query = Query::select();
         query
             .from(Self::table_ref())
@@ -114,7 +119,7 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
                 .await
                 .map_err(Into::<DbError>::into)?;
 
-        let result = lessons.iter().map(|exercise | ExerciseForChangeOreder { 
+        let result = lessons.iter().map(|exercise | ExerciseForChangeOrder { 
             id: exercise.id, 
             order: exercise.exercise_order, 
         }).collect();
@@ -174,5 +179,28 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
 		Ok(())
+    }
+
+    async fn update_exercise_orders(
+        &self, 
+        ctx: &Ctx, 
+        lesson_exercises: Vec<ExerciseForChangeOrder>
+    ) -> ExerciseResult<()> {
+        let dbm = self.dbm.new_with_txn()?;
+		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
+
+        for exercise in &lesson_exercises {
+            let exercise_for_u_order = ExerciseForUpdateOrder { 
+                exercise_order: exercise.order,
+            };
+
+            base::update::<Self, ExerciseForUpdateOrder>(&ctx, &dbm, exercise.id, exercise_for_u_order)
+			    .await
+			    .map_err(Into::<DbError>::into)?;
+        }
+
+		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
+        
+        Ok(())
     }
 }

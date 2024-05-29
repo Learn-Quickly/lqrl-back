@@ -29,3 +29,9 @@ pub struct ExerciseForUpdatePayload {
     pub difficult: Option<String>,
     pub time_to_complete: Option<i64>,  
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ExerciseChangeOrderPayload {
+    pub exercise_id: i64,
+    pub order: i32,
+}

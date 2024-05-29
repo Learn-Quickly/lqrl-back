@@ -107,7 +107,7 @@ pub struct Stage {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ExerciseForChangeOreder {
+pub struct ExerciseForChangeOrder {
     pub id: i64,
     pub order: i32,
 }

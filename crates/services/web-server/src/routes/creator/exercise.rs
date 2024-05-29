@@ -1,13 +1,14 @@
 use axum::{extract::State, routing::{post, put}, Json, Router};
-use lib_core::{interactors::creator::exercise::CreatorExerciseInteractor, models::exercise::{Exercise, ExerciseForUpdate}};
+use lib_core::{interactors::creator::exercise::CreatorExerciseInteractor, models::exercise::{Exercise, ExerciseForChangeOrder, ExerciseForUpdate}};
 use serde_json::{json, Value};
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::exercise::{ExerciseCreatePayload, ExerciseCreatedPayload, ExerciseForUpdatePayload}};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::exercise::{ExerciseChangeOrderPayload, ExerciseCreatePayload, ExerciseCreatedPayload, ExerciseForUpdatePayload}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/create", post(api_create_exercise_handler))
 		.route("/update", put(api_update_exercise_handler))
+		.route("/change_order", put(api_exercise_change_order_handler))
 		.with_state(app_state)
 }
 
@@ -96,6 +97,43 @@ async fn api_update_exercise_handler(
 	let exercise_interactor = CreatorExerciseInteractor::new(command_repository_manager);
 
     exercise_interactor.update_exercise(&ctx, lesson_u).await?;
+
+	let body = Json(json!({
+		"result": {
+			"success": true,
+		}
+	}));
+
+    Ok(body)
+}
+
+#[utoipa::path(
+	put,
+	path = "/api/course/lesson/exercise/change_order",
+	request_body = ExerciseChangeOrderPayload,
+	responses(
+		(status = 200, description = "Exercise order updated successfully"),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_exercise_change_order_handler(
+    ctx: CtxW,
+	State(app_state): State<AppState>,
+	Json(paylod): Json<ExerciseChangeOrderPayload>,
+) -> AppResult<Json<Value>> {
+    let ctx = ctx.0;
+
+    let exercise_c_o = ExerciseForChangeOrder {
+        id: paylod.exercise_id,
+		order: paylod.order,
+    };
+
+	let command_repository_manager = app_state.command_repository_manager;
+	let exercise_interactor = CreatorExerciseInteractor::new(command_repository_manager);
+
+    exercise_interactor.change_order(&ctx, exercise_c_o).await?;
 
 	let body = Json(json!({
 		"result": {
