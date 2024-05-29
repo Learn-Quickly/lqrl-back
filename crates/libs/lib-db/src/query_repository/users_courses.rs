@@ -42,10 +42,6 @@ pub struct UsersCoursesQueryRepository;
 
 impl DbRepository for UsersCoursesQueryRepository {
     const TABLE: &'static str = "users_courses";
-
-	fn has_timestamps() -> bool {
-        false
-	}
 }
 
 impl UsersCoursesQueryRepository {

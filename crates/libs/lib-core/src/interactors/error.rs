@@ -18,6 +18,8 @@ pub enum CoreError {
 	#[from]
 	LessonProgressError(LessonProgressError),
 	#[from]
+	ExerciseError(ExerciseError),
+	#[from]
 	UserError(UserError),
 
 	// File error
@@ -62,6 +64,17 @@ pub enum LessonError {
 #[derive(Debug, Serialize)]
 pub enum LessonProgressError {
 	LessonProgressStateDoesNotExist { state: String },
+}
+
+#[derive(Debug, Serialize)]
+pub enum ExerciseError {
+	IncorrectExerciseBodyFormat,
+	IncorrectHeaderFormat,
+	IncorrectDefinitionFormat,
+	IncorrectProcessStagesFormat,
+	IncorrectExerciseType,
+	IncorrectExerciseDifficult,
+	NotEnoughNodesError { number_of_nodes: usize }
 }
 
 #[serde_as]

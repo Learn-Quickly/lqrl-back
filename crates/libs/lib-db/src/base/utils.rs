@@ -5,7 +5,6 @@ use sea_query::IntoIden;
 
 use super::idens::{CommonIden, TimestampIden};
 
-/// This method must be called when a model controller intends to create its entity.
 pub fn prep_fields_for_create<MC>(fields: &mut Fields, user_id: i64)
 where
 	MC: DbRepository,
@@ -18,7 +17,6 @@ where
 	}
 }
 
-/// This method must be calledwhen a Model Controller plans to update its entity.
 pub fn prep_fields_for_update<MC>(fields: &mut Fields, user_id: i64)
 where
 	MC: DbRepository,
@@ -28,8 +26,6 @@ where
 	}
 }
 
-/// Update the timestamps info for create
-/// (e.g., cid, ctime, and mid, mtime will be updated with the same values)
 fn add_timestamps_for_create(fields: &mut Fields, user_id: i64) {
 	let now = now_utc();
 	fields.push(Field::new(TimestampIden::Cid.into_iden(), user_id.into()));
@@ -39,8 +35,6 @@ fn add_timestamps_for_create(fields: &mut Fields, user_id: i64) {
 	fields.push(Field::new(TimestampIden::Mtime.into_iden(), now.into()));
 }
 
-/// Update the timestamps info only for update.
-/// (.e.g., only mid, mtime will be udpated)
 fn add_timestamps_for_update(fields: &mut Fields, user_id: i64) {
 	let now = now_utc();
 	fields.push(Field::new(TimestampIden::Mid.into_iden(), user_id.into()));

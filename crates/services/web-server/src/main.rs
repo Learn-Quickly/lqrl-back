@@ -35,7 +35,7 @@ async fn main() -> AppResult<()> {
 		.init();
 
 	// -- FOR DEV ONLY
-	_dev_utils::init_dev().await;
+	// _dev_utils::init_dev().await;
 
 	let app_state = AppState::new().await?;
 
@@ -68,6 +68,9 @@ async fn main() -> AppResult<()> {
 	let routes_student_lesson_progress = routes::student::lesson_progress::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
+	let routes_creator_exercise = routes::creator::exercise::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
 	let routes_all = Router::new()
 		.nest("/api/course", routes_user_course)
 		.nest("/api/course", routes_student_course)
@@ -76,6 +79,7 @@ async fn main() -> AppResult<()> {
 		.nest("/api/course/lesson", routes_user_lesson)
 		.nest("/api/course/lesson", routes_student_lesson)
 		.nest("/api/course/lesson", routes_student_lesson_progress)
+		.nest("/api/course/lesson/exercise", routes_creator_exercise)
 		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolver))
 		.merge(login::routes(app_state.clone()))

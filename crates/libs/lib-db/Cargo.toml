@@ -24,7 +24,7 @@ serde_with = { workspace = true }
 # -- Data
 sqlx = { version = "0.7", features = [ "macros", "runtime-tokio", "postgres", "uuid" ] }
 sea-query = "0.30"
-sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
+sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-uuid", "with-time", "with-json" ] }
 modql = { workspace = true }
 # -- Tracing
 tracing = "0.1"
