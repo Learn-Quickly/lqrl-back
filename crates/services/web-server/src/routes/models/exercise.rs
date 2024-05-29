@@ -18,3 +18,14 @@ pub struct ExerciseCreatePayload {
 pub struct ExerciseCreatedPayload {
     pub exercise_id: i64,
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ExerciseForUpdatePayload {
+    pub exercise_id: i64,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub exercise_type: Option<String>,
+    pub body: Option<Value>,
+    pub difficult: Option<String>,
+    pub time_to_complete: Option<i64>,  
+}

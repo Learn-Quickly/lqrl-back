@@ -122,3 +122,14 @@ pub struct ExerciseForCreateCommand {
     pub difficult: ExerciseDifficult,
     pub time_to_complete: Option<i64>,  
 }
+
+#[derive(Clone)]
+pub struct ExerciseForUpdate {
+    pub id: i64,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub exercise_type: Option<ExerciseType>,
+    pub body: Option<Value>,
+    pub difficult: Option<ExerciseDifficult>,
+    pub time_to_complete: Option<i64>,  
+}

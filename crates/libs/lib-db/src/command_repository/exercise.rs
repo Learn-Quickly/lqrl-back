@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lib_core::{ctx::Ctx, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::exercise::{ExerciseForChangeOreder, ExerciseForCreateCommand}};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::exercise::{ExerciseForChangeOreder, ExerciseForCreateCommand}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
@@ -32,6 +32,36 @@ struct ExerciseData {
     pub time_to_complete: Option<i64>,
 }
 
+impl TryFrom<ExerciseData> for lib_core::models::exercise::Exercise {
+    type Error = CoreError;
+
+    fn try_from(value: ExerciseData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            lesson_id: value.lesson_id,
+            title: value.title,
+            description: value.description,
+            exercise_type: value.exercise_type.try_into()?,
+            body: value.body,
+            difficult: value.difficult.try_into()?,
+            time_to_complete: value.time_to_complete,
+        })
+    }
+}
+
+#[derive(Fields)]
+struct ExerciseForUpdate {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub exercise_type: Option<String>,
+    pub difficult: Option<String>,
+    pub time_to_complete: Option<i64>,  
+}
+
+#[derive(Fields)]
+struct ExerciseForUpdateBody {
+    pub body: Value,
+}
+
 pub trait ExerciseBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
 
 impl ExerciseBy for ExerciseData {}
@@ -55,6 +85,15 @@ impl ExerciseCommandRepository {
 
 #[async_trait]
 impl IExerciseCommandRepository for ExerciseCommandRepository {
+    async fn get_exercise(&self, ctx: &Ctx, exercise_id: i64) -> ExerciseResult<lib_core::models::exercise::Exercise> {
+        let res = base::get::<Self, ExerciseData>(ctx, &self.dbm, exercise_id)
+            .await
+            .map_err(Into::<DbError>::into)?
+            .try_into()?;
+
+        Ok(res)
+    }
+
     async fn get_lesson_exercises_ordered(
         &self,
         _: &Ctx,
@@ -100,5 +139,40 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
             .map_err(Into::<DbError>::into)?;
 
         Ok(exercise_id)
+    }
+
+    async fn update(
+        &self,
+        ctx: &Ctx, 
+        exercise_for_u: lib_core::models::exercise::ExerciseForUpdate, 
+    ) -> ExerciseResult<()> {
+		let dbm = self.dbm.new_with_txn()?;
+		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
+
+        let data = ExerciseForUpdate {
+            title: exercise_for_u.title.clone(), 
+            description: exercise_for_u.description.clone(), 
+            exercise_type: exercise_for_u.exercise_type.and_then(|t| Some(t.to_string())), 
+            difficult: exercise_for_u.difficult.clone().and_then(|d| Some(d.to_string())), 
+            time_to_complete: exercise_for_u.time_to_complete,
+        };
+
+		base::update::<Self, ExerciseForUpdate>(&ctx, &self.dbm, exercise_for_u.id, data)
+			.await
+			.map_err(Into::<DbError>::into)?;
+
+        if let Some(body) = exercise_for_u.body {
+            let exercise_for_u_b = ExerciseForUpdateBody { 
+                body: Value::Json(Some(Box::new(body))),
+            };
+
+		    base::update::<Self, ExerciseForUpdateBody>(&ctx, &self.dbm, exercise_for_u.id, exercise_for_u_b)
+			    .await
+			    .map_err(Into::<DbError>::into)?;
+        }
+
+		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
+
+		Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interactors::{exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{Exercise, ExerciseForCreateCommand}};
+use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{Exercise, ExerciseForCreateCommand, ExerciseForUpdate}};
 
 
 pub struct CreatorExerciseInteractor {
@@ -27,14 +27,11 @@ impl CreatorExerciseInteractor {
         ctx: &Ctx,
         exercise: Exercise, 
     ) -> ExerciseResult<i64> {
-        let lesson_repository = self.repository_manager.get_lesson_repository();
-        let lesson = lesson_repository.get_lesson(ctx, exercise.lesson_id).await?;
-
         self.permission_manager
-            .check_course_creator_permission(ctx, lesson.course_id)
+            .check_lesson_creator_permission(ctx, exercise.lesson_id)
             .await?;
 
-        ExerciseValidator::validate_exercise(&exercise)?;
+        ExerciseValidator::validate_exercise(&exercise.exercise_type, exercise.body.clone())?;
 
         let exercise_repository = self.repository_manager.get_exercise_repository();
         let lesson_exercises = exercise_repository
@@ -54,8 +51,30 @@ impl CreatorExerciseInteractor {
             time_to_complete: exercise.time_to_complete,
         };
 
-        let exercise_id = exercise_repository.create(ctx, exercise_for_c).await?;
+        exercise_repository.create(ctx, exercise_for_c).await
+    }
 
-        Ok(exercise_id)
+    pub async fn update_exercise(
+        &self, 
+        ctx: &Ctx,
+        exercise_for_u: ExerciseForUpdate
+    ) -> ExerciseResult<()> {
+        self.permission_manager
+            .check_exercise_creator_permission(ctx, exercise_for_u.id)
+            .await?;
+
+        if let Some(body) = exercise_for_u.body.clone() {
+            if let Some(exercise_type) = exercise_for_u.exercise_type.clone() {
+                ExerciseValidator::validate_exercise(&exercise_type, body)?;
+            } else {
+                return Err(ExerciseError::CannotUpdateExerciseBodyWithoutType {}.into())
+            }
+        } else if let Some(_) = exercise_for_u.exercise_type {
+            return Err(ExerciseError::CannotUpdateExercisetypeWithoutBody {}.into())
+        }
+
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+
+        exercise_repository.update(ctx, exercise_for_u).await
     }
 }

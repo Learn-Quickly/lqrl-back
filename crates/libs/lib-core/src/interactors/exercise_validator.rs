@@ -1,16 +1,16 @@
 use serde_json::Value;
 
-use crate::{interfaces::exercise::ExerciseResult, models::exercise::{Conspect, Definition, Exercise, HeaderBody, Node}};
+use crate::{interfaces::exercise::ExerciseResult, models::exercise::{Conspect, Definition, ExerciseType, HeaderBody, Node}};
 
 use super::error::ExerciseError;
 
 pub struct ExerciseValidator;
 
 impl ExerciseValidator {
-    pub fn validate_exercise(exercise: &Exercise) -> ExerciseResult<()> {
-        match exercise.exercise_type {
+    pub fn validate_exercise(exercise_type: &ExerciseType, exercise_body: Value) -> ExerciseResult<()> {
+        match exercise_type {
             crate::models::exercise::ExerciseType::Conspect | 
-            crate::models::exercise::ExerciseType::InteractiveConspect => Self::validate_conspect_body(exercise.body.clone()),
+            crate::models::exercise::ExerciseType::InteractiveConspect => Self::validate_conspect_body(exercise_body),
         }
     }
 

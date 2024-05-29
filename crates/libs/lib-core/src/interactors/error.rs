@@ -74,7 +74,9 @@ pub enum ExerciseError {
 	IncorrectProcessStagesFormat,
 	IncorrectExerciseType,
 	IncorrectExerciseDifficult,
-	NotEnoughNodesError { number_of_nodes: usize }
+	NotEnoughNodesError { number_of_nodes: usize },
+	CannotUpdateExerciseBodyWithoutType,
+	CannotUpdateExercisetypeWithoutBody,
 }
 
 #[serde_as]
