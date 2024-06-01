@@ -77,6 +77,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 			models::course::CourseStatePayload,
 			models::course::CourseId,
 			models::course::CourseFilterPayload,
+			models::course::CoursesPayload,
 
 			// Lesson
 			models::lesson::LessonCreatedPayload,

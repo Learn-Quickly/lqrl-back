@@ -1,7 +1,8 @@
 pub(crate) mod error;
 
+use sea_query_binder::SqlxValues;
 use sqlx::postgres::any::AnyConnectionBackend;
-use sqlx::query::{Query, QueryAs};
+use sqlx::query::{Query, QueryAs, QueryScalar};
 use sqlx::{FromRow, IntoArguments, Pool, Postgres, Transaction};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -110,6 +111,24 @@ impl Dbx {
 
 	pub fn db(&self) -> &Pool<Postgres> {
 		&self.db_pool
+	}
+
+	pub async fn fetch_one_scalar<'q>(
+		&self,
+		query: QueryScalar<'q, Postgres, i64, SqlxValues>,
+	) -> DbxResult<i64>{
+		let data = if self.with_txn {
+			let mut txh_g = self.txn_holder.lock().await;
+			if let Some(txn) = txh_g.as_deref_mut() {
+				query.fetch_one(txn.as_mut()).await?
+			} else {
+				query.fetch_one(self.db()).await?
+			}
+		} else {
+			query.fetch_one(self.db()).await?
+		};
+
+		Ok(data)
 	}
 
 	pub async fn fetch_one<'q, O, A>(

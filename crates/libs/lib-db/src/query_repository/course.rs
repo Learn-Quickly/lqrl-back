@@ -1,15 +1,18 @@
 use lib_core::ctx::Ctx;
 use modql::field::{Fields, HasFields};
-use modql::filter::{FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
-use sea_query::{Expr, PostgresQueryBuilder, Query};
+use modql::filter::{FilterGroups, FilterNodes, ListOptions, OpValsFloat64, OpValsInt64, OpValsString, OpValsValue};
+use sea_query::{Condition, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::FromRow;
 use time::OffsetDateTime;
-use crate::base::idens::CommonIden;
+use crate::base::compute_list_options;
+use crate::base::idens::{CommonIden, CourseIden, UserCourseIden};
+use crate::base::table_ref::get_users_courses_table_ref;
 use crate::query_repository::modql_utils::time_to_sea_value;
 use crate::store::db_manager::DbManager;
+use crate::store::dbx::error::DbxError;
 use lib_utils::time::Rfc3339;
 
 use crate::{base::{self, DbRepository}, store::error::{DbError, DbResult}};
@@ -72,15 +75,89 @@ impl DbRepository for CourseQueryRepository {
 impl CourseQueryRepository {
 	pub async fn list(
 		&self, 
-		ctx: &Ctx,
+		_: &Ctx,
+		user_id: i64,
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<CourseQuery>> {
-		let result = base::list::<Self, CourseQuery, _>(ctx, &self.dbm, filter, list_options)
-			.await
-			.map_err(Into::<DbError>::into)?;
+		let mut query = Query::select();
+		query.from(Self::table_ref()).columns(CourseQuery::field_column_refs())
+			.left_join(
+				get_users_courses_table_ref(), 
+				Expr::col((UserCourseIden::UsersCourses, UserCourseIden::CourseId))
+				.equals((CourseIden::Course, CommonIden::Id))
+			)
+			.cond_where(
+				Condition::any()
+					.add(
+						Condition::all()
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserId)).ne(user_id))
+					)
+					.add(
+						Condition::all()
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserId)).eq(user_id))
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserRole)).ne("Creator"))
+					)
+			);
 
-		Ok(result)
+		if let Some(filter) = filter {
+			let filters: FilterGroups = filter.into();
+			let cond: Condition = filters.try_into().map_err(Into::<DbxError>::into)?;
+			query.cond_where(cond);
+		}
+
+
+		let list_options = compute_list_options(list_options)?;
+		list_options.apply_to_sea_query(&mut query);
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+		let sqlx_query = sqlx::query_as_with::<_, CourseQuery, _>(&sql, values);
+		let entities = self.dbm.dbx().fetch_all(sqlx_query).await?;
+
+		Ok(entities)
+	}
+
+	pub async fn count(
+		&self, 
+		_: &Ctx,
+		user_id: i64,
+		filter: Option<Vec<CourseFilter>>,
+	) -> DbResult<i64> {
+		let mut query = Query::select();
+		query
+			.expr(Expr::col((CourseIden::Course, CommonIden::Id)).count())
+			.from(Self::table_ref())
+			.left_join(
+				get_users_courses_table_ref(), 
+				Expr::col((UserCourseIden::UsersCourses, UserCourseIden::CourseId))
+				.equals((CourseIden::Course, CommonIden::Id))
+			)
+			.cond_where(
+				Condition::any()
+					.add(
+						Condition::all()
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserId)).ne(user_id))
+					)
+					.add(
+						Condition::all()
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserId)).eq(user_id))
+							.add(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::UserRole)).ne("Creator"))
+					)
+			);
+
+		if let Some(filter) = filter {
+			let filters: FilterGroups = filter.into();
+			let cond: Condition = filters.try_into().map_err(Into::<DbxError>::into)?;
+			query.cond_where(cond);
+		}
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+		let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
+		let entities = self.dbm.dbx().fetch_one_scalar(sqlx_query).await?;
+
+		Ok(entities)
 	}
 
 	pub async fn get(&self, ctx: &Ctx, id: i64) -> DbResult<CourseQuery>
