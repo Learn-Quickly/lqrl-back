@@ -1,9 +1,9 @@
-use axum::{extract::State, routing::{get, put}, Json, Router};
+use axum::{extract::{Query, State}, routing::{get, put}, Json, Router};
 use lib_core::interactors::student::course::StudentCourseInteractor;
 use lib_db::query_repository::course::CourseQuery;
 use serde_json::{json, Value};
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseId, CoursePayload}};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::course::{CourseFilterPayload, CourseId, CoursePayload, CoursesPayload}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
@@ -82,8 +82,11 @@ async fn api_unsubscribe_from_course_handler(
 #[utoipa::path(
 	get,
 	path = "/api/course/get_user_courses_registered/",
+	params(
+		CourseFilterPayload
+	),
 	responses(
-		(status = 200, body=Vec<CoursePayload>),
+		(status = 200, body=CoursesPayload),
 	),
 	security(
 		("bearerAuth" = [])
@@ -92,16 +95,43 @@ async fn api_unsubscribe_from_course_handler(
 async fn api_get_user_courses_registered_handler(
 	ctx: CtxW,
 	State(app_state): State<AppState>,
-) -> AppResult<Json<Vec<CoursePayload>>> {
+	Query(filter_payload): Query<CourseFilterPayload>,
+) -> AppResult<Json<CoursesPayload>> {
 	let ctx = ctx.0;
 	let user_id = ctx.user_id();
 
+	let filters = if let Some(filters) = filter_payload.filters.clone() {
+		serde_json::from_str(&filters)?
+	} else {
+		None
+	};
+
+	let list_options = if let Some(list_options) = filter_payload.list_options.clone() {
+		serde_json::from_str(&list_options)?
+	} else {
+		None
+	};
+
 	let course_query_repository = app_state.query_repository_manager.get_course_repository();
-	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_registered(&ctx, user_id).await?;
-	let mut body: Vec<CoursePayload> = Vec::new();
+	let courses: Vec<CourseQuery> = course_query_repository.get_user_courses_registered(&ctx, user_id, filters, list_options).await?;
+
+	let mut courses_res: Vec<CoursePayload> = Vec::new();
 	for course in courses {
-		body.push(course.try_into()?)
+		courses_res.push(course.try_into()?)
 	}
 
-	Ok(Json(body))
+	let filters = if let Some(filters) = filter_payload.filters.clone() {
+		serde_json::from_str(&filters)?
+	} else {
+		None
+	};
+
+	let number_of_courses = course_query_repository.get_user_courses_registered_count(&ctx, user_id, filters).await?;
+
+	let result = CoursesPayload { 
+		courses: courses_res, 
+		count: number_of_courses, 
+	};
+
+	Ok(Json(result))
 }
