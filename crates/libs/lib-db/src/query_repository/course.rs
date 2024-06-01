@@ -17,7 +17,7 @@ use lib_utils::time::Rfc3339;
 
 use crate::{base::{self, DbRepository}, store::error::{DbError, DbResult}};
 
-use super::users_courses::UsersCoursesQueryRepository;
+use super::users_courses::{UserCourseRoleQuery, UsersCoursesQueryRepository};
 
 #[serde_as]
 #[derive(Clone, Fields, FromRow, Debug, Serialize)]
@@ -80,11 +80,7 @@ impl CourseQueryRepository {
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<CourseQuery>> {
-		let user_courses: Vec<i64> = UsersCoursesQueryRepository::get_user_courses(&self.dbm, user_id, super::users_courses::UserCourseRoleQuery::Creator)
-			.await?
-			.iter()
-			.map(|user_course| user_course.course_id)
-			.collect();
+		let user_courses = self.get_courses_by_role(user_id, UserCourseRoleQuery::Creator).await?;
 
 		let mut query = Query::select();
 		query.from(Self::table_ref())
@@ -120,11 +116,7 @@ impl CourseQueryRepository {
 		user_id: i64,
 		filter: Option<Vec<CourseFilter>>,
 	) -> DbResult<i64> {
-		let user_courses: Vec<i64> = UsersCoursesQueryRepository::get_user_courses(&self.dbm, user_id, super::users_courses::UserCourseRoleQuery::Creator)
-        	.await?
-        	.iter()
-        	.map(|user_course| user_course.course_id)
-        	.collect();
+		let courses_ids = self.get_courses_by_role(user_id, UserCourseRoleQuery::Creator).await?;
 
     	let mut subquery = Query::select();
     	subquery.from(Self::table_ref())
@@ -134,7 +126,7 @@ impl CourseQueryRepository {
             	Expr::col((UserCourseIden::UsersCourses, UserCourseIden::CourseId))
             	.equals((CourseIden::Course, CommonIden::Id))
         	)
-        	.and_where(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::CourseId)).is_not_in(user_courses))
+        	.and_where(Expr::col((UserCourseIden::UsersCourses, UserCourseIden::CourseId)).is_not_in(courses_ids))
         	.distinct();
 
     	if let Some(filter) = filter {
@@ -203,36 +195,42 @@ impl CourseQueryRepository {
 		Ok(result)
 	}
 
+	async fn get_courses_by_role(&self, user_id: i64, user_role: UserCourseRoleQuery) -> DbResult<Vec<i64>> {
+		Ok(UsersCoursesQueryRepository::get_user_courses(
+			&self.dbm,
+			user_id, 
+			user_role,
+		)
+			.await?
+			.iter()
+			.map(|user_course| user_course.course_id)
+			.collect())
+	}
+
 	pub async fn get_user_courses_registered_count(
 		&self,
 		_ctx: &Ctx,
 		user_id: i64,
 		filter: Option<Vec<CourseFilter>>,
 	) -> DbResult<i64> {
-		let user_courses = UsersCoursesQueryRepository::get_user_courses(
-			&self.dbm,
-			user_id, 
-			super::users_courses::UserCourseRoleQuery::Student
-		).await?;
-
-		let courses_ids: Vec<i64> = user_courses.iter().map(|user_course| user_course.course_id).collect();
+		let courses_ids = self.get_courses_by_role(user_id, UserCourseRoleQuery::Student).await?;
 
 		let mut query = Query::select();
 		query
-        	.expr(Expr::col((CourseIden::Course, CommonIden::Id)))
+			.expr(Expr::col((CourseIden::Course, CommonIden::Id)).count())
 			.from(Self::table_ref())
-			.and_where(Expr::col(CommonIden::Id).is_in(courses_ids));
-
+			.and_where(Expr::col((CourseIden::Course, CommonIden::Id)).is_in(courses_ids));
+	
 		if let Some(filter) = filter {
 			let filters: FilterGroups = filter.into();
 			let cond: Condition = filters.try_into().map_err(Into::<DbxError>::into)?;
 			query.cond_where(cond);
 		}
-
+	
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-    	let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
-    	let result = self.dbm.dbx().fetch_one_scalar(sqlx_query).await?;
-
+		let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
+		let result = self.dbm.dbx().fetch_one_scalar(sqlx_query).await?;
+	
 		Ok(result)
 	}
 
@@ -243,13 +241,7 @@ impl CourseQueryRepository {
 		filter: Option<Vec<CourseFilter>>,
 		list_options: Option<ListOptions>,
 	) -> DbResult<Vec<CourseQuery>> {
-		let user_courses = UsersCoursesQueryRepository::get_user_courses(
-			&self.dbm,
-			user_id, 
-			super::users_courses::UserCourseRoleQuery::Creator
-		).await?;
-
-		let courses_ids: Vec<i64> = user_courses.iter().map(|user_course| user_course.course_id).collect();
+		let courses_ids = self.get_courses_by_role(user_id, UserCourseRoleQuery::Creator).await?;
 
 		let mut query = Query::select();
 		query
@@ -281,19 +273,12 @@ impl CourseQueryRepository {
 		user_id: i64,
 		filter: Option<Vec<CourseFilter>>,
 	) -> DbResult<i64> {
-		let user_courses = UsersCoursesQueryRepository::get_user_courses(
-			&self.dbm,
-			user_id, 
-			super::users_courses::UserCourseRoleQuery::Creator
-		).await?;
-
-		let courses_ids: Vec<i64> = user_courses.iter().map(|user_course| user_course.course_id).collect();
+		let courses_ids = self.get_courses_by_role(user_id, UserCourseRoleQuery::Creator).await?;
 
 		let mut query = Query::select();
 		query
 			.expr(Expr::col((CourseIden::Course, CommonIden::Id)).count())
 			.from(Self::table_ref())
-			.columns(CourseQuery::field_column_refs())
 			.and_where(Expr::col(CommonIden::Id).is_in(courses_ids));
 
 		if let Some(filter) = filter {
