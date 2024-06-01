@@ -34,6 +34,12 @@ pub struct CourseId {
 	pub course_id: i64,
 }
 
+#[derive(ToSchema, Serialize)]
+pub struct CoursesPayload {
+	pub courses: Vec<CoursePayload>,
+	pub count: i64,
+}
+
 #[serde_as]
 #[derive(Serialize, ToSchema)]
 pub struct CoursePayload {
