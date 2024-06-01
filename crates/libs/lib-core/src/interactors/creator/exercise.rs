@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{Exercise, ExerciseForChangeOrder, ExerciseForCreateCommand, ExerciseForUpdate}};
+use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise::{ExerciseForChangeOrder, ExerciseForCreate, ExerciseForCreateCommand, ExerciseForUpdate}};
 
 
 pub struct CreatorExerciseInteractor {
@@ -25,7 +25,7 @@ impl CreatorExerciseInteractor {
     pub async fn create_exercise(
         &self, 
         ctx: &Ctx,
-        exercise: Exercise, 
+        exercise: ExerciseForCreate, 
     ) -> ExerciseResult<i64> {
         self.permission_manager
             .check_lesson_creator_permission(ctx, exercise.lesson_id)

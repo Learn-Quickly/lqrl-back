@@ -6,7 +6,7 @@ use utoipa::{
 use utoipa::openapi::security::Http;
 use crate::routes::models;
 use crate::routes::user::{login, register, user, course as user_course, lesson as user_lesson};
-use crate::routes::student::{course as student_course, lesson as student_lesson, lesson_progress as student_lesson_progress};
+use crate::routes::student::{course as student_course, lesson as student_lesson, lesson_progress as student_lesson_progress, exercise as student_exercise};
 use crate::routes::creator::{course as creator_course, lesson as creator_lesson, exercise as creator_exercise};
 
 #[derive(OpenApi)]
@@ -55,6 +55,8 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 		creator_exercise::api_create_exercise_handler,
 		creator_exercise::api_update_exercise_handler,
 		creator_exercise::api_exercise_change_order_handler,
+
+		student_exercise::api_start_exercise_handler,
     ),
     components(
 		schemas(
@@ -94,6 +96,8 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 			models::exercise::ExerciseCreatedPayload,
 			models::exercise::ExerciseForUpdatePayload,
 			models::exercise::ExerciseChangeOrderPayload,
+
+			models::exercise::ExerciseId,
 		)
     ),
     modifiers(&SecurityAddon),

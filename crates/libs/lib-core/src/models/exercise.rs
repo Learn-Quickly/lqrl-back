@@ -13,6 +13,7 @@ pub struct Exercise {
     pub body: Value,
     pub difficult: ExerciseDifficult,
     pub time_to_complete: Option<i64>,  
+    pub exercise_order: i32,
 }
 
 #[derive(Clone, Display)]
@@ -110,6 +111,17 @@ pub struct Stage {
 pub struct ExerciseForChangeOrder {
     pub id: i64,
     pub order: i32,
+}
+
+#[derive(Clone)]
+pub struct ExerciseForCreate {
+    pub lesson_id: i64,
+    pub title: String,
+    pub description: String,
+    pub exercise_type: ExerciseType,
+    pub body: Value,
+    pub difficult: ExerciseDifficult,
+    pub time_to_complete: Option<i64>,  
 }
 
 pub struct ExerciseForCreateCommand {

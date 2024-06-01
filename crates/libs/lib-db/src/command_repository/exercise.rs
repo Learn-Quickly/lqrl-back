@@ -1,11 +1,13 @@
 use async_trait::async_trait;
-use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate}}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 
 use crate::{base::{self, idens::ExerciseIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+
+use super::exercise_completion::ExerciseCompletionCommandRepository;
 
 #[derive(Fields)]
 struct Exercise {
@@ -44,6 +46,7 @@ impl TryFrom<ExerciseData> for lib_core::models::exercise::Exercise {
             body: value.body,
             difficult: value.difficult.try_into()?,
             time_to_complete: value.time_to_complete,
+            exercise_order: value.exercise_order,
         })
     }
 }
@@ -202,5 +205,22 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
         
         Ok(())
+    }
+
+    async fn get_exercise_user_completions(
+        &self,
+        ctx: &Ctx,
+        user_id: i64,
+        exercise_id: i64,
+    ) -> ExerciseResult<Vec<ExerciseCompletion>> {
+        ExerciseCompletionCommandRepository::get_exercise_user_completions(&ctx, &self.dbm, user_id, exercise_id).await
+    }
+
+    async fn create_exercise_completion(
+        &self,
+        ctx: &Ctx, 
+        ex_comp_for_c: ExerciseCompletionForCreate
+    ) -> ExerciseResult<()> {
+        ExerciseCompletionCommandRepository::create_exercise_completion(ctx, &self.dbm, ex_comp_for_c).await
     }
 }

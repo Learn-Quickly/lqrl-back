@@ -19,6 +19,7 @@ pub enum CoreError {
 	LessonProgressError(LessonProgressError),
 	#[from]
 	ExerciseError(ExerciseError),
+
 	#[from]
 	UserError(UserError),
 
@@ -78,6 +79,11 @@ pub enum ExerciseError {
 	CannotUpdateExerciseBodyWithoutType,
 	CannotUpdateExercisetypeWithoutBody,
     IncorrectExerciseOreder { exercise_id: i64, order: i32 },
+
+    PreviousExerciseNotCompleted { exercise_id: i64 },
+	PreviousExerciseNotFound { exercise_id: i64 },
+
+	ExerciseCompletionStateDoesNotExist { state: String },
 }
 
 #[serde_as]

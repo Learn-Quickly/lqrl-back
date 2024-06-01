@@ -35,3 +35,8 @@ pub struct ExerciseChangeOrderPayload {
     pub exercise_id: i64,
     pub order: i32,
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ExerciseId {
+    pub exercise_id: i64,
+}

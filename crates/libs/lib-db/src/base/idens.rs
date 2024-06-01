@@ -54,3 +54,9 @@ pub enum ExerciseIden {
 	LessonId,
     ExerciseOrder,
 }
+
+#[derive(Iden)]
+pub enum ExerciseCompletionIden {
+	ExerciseId,
+	UserId,
+}

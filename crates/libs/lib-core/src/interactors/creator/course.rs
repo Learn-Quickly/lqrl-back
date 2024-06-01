@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use lib_utils::time::now_utc_sec;
+
 use crate::{
     ctx::Ctx,
     interactors::{error::CourseError, img_file::{remove_file, upload_file}, permission_manager::PermissionManager}, 
@@ -94,8 +96,10 @@ impl CreatorCourseInteractor {
     ) -> CourseResult<()> {
         self.permission_manager.check_course_creator_permission(ctx, course_id).await?;
 
+        let published_date = now_utc_sec();
         let command = CourseForUpdateCommand::builder()
             .state(crate::models::course::CourseState::Published)
+            .published_date(published_date)
             .build();
 
         let course_repository = self.repository_manager.get_course_repository();

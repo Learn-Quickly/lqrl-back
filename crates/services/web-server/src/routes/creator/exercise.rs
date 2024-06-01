@@ -1,5 +1,5 @@
 use axum::{extract::State, routing::{post, put}, Json, Router};
-use lib_core::{interactors::creator::exercise::CreatorExerciseInteractor, models::exercise::{Exercise, ExerciseForChangeOrder, ExerciseForUpdate}};
+use lib_core::{interactors::creator::exercise::CreatorExerciseInteractor, models::exercise::{ExerciseForChangeOrder, ExerciseForCreate, ExerciseForUpdate}};
 use serde_json::{json, Value};
 
 use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::exercise::{ExerciseChangeOrderPayload, ExerciseCreatePayload, ExerciseCreatedPayload, ExerciseForUpdatePayload}};
@@ -30,7 +30,7 @@ async fn api_create_exercise_handler(
 ) -> AppResult<Json<ExerciseCreatedPayload>> {
     let ctx = ctx.0;
 
-    let exercise_c = Exercise { 
+    let exercise_c = ExerciseForCreate { 
         lesson_id: payload.lesson_id, 
         title: payload.title.clone(), 
         description: payload.description.clone(), 

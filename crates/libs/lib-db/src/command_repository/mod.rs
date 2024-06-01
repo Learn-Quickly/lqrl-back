@@ -4,3 +4,4 @@ pub mod users_courses;
 pub mod lesson;
 pub mod lesson_progress;
 pub mod exercise;
+pub mod exercise_completion;

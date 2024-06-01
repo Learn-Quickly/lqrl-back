@@ -7,6 +7,10 @@ pub fn now_utc() -> OffsetDateTime {
 	OffsetDateTime::now_utc()
 }
 
+pub fn now_utc_sec() -> i64 {
+	OffsetDateTime::now_utc().unix_timestamp()
+}
+
 pub fn from_unix_timestamp(secs: i64) -> Result<OffsetDateTime> {
 	OffsetDateTime::from_unix_timestamp(secs)
 		.map_err(|err| DateError::FailToParseUnixTimestamp(err.to_string()))
