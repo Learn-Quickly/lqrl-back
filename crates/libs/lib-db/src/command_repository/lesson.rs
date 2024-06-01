@@ -33,7 +33,7 @@ struct LessonForInsert {
 
 #[derive(Fields)]
 struct LessonForUpdateOrder {
-    pub order: i32,
+    pub lesson_order: i32,
 }
 
 #[derive(Fields)]
@@ -187,13 +187,15 @@ impl ILessonCommandRepository for LessonCommandRepository {
 
         for lesson in &lessons_for_c_order {
             let lesson_for_u_order = LessonForUpdateOrder { 
-                order: lesson.order,
+                lesson_order: lesson.order,
             };
 
             base::update::<Self, LessonForUpdateOrder>(&ctx, &dbm, lesson.id, lesson_for_u_order)
 			    .await
 			    .map_err(Into::<DbError>::into)?;
         }
+
+		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
         Ok(())
     }

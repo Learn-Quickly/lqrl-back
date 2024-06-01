@@ -15,7 +15,7 @@ pub fn routes(app_state: AppState) -> Router {
 		GetLessonProgressesPayload
 	),
 	responses(
-		(status = 200, body = Json<Json<Vec<LessonProgressPayload>>>),
+		(status = 200, body = Vec<LessonProgressPayload>),
 	),
 	security(
 		("bearerAuth" = [])

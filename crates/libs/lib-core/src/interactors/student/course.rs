@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub struct StudentCourseInteractor {
-    permission_manager: PermissionManager,
+    _permission_manager: PermissionManager,
     repository_manager: Arc<dyn ICommandRepositoryManager + Send + Sync>,
 }
 
@@ -22,7 +22,7 @@ impl StudentCourseInteractor {
         let permission_manager = PermissionManager::new(repository_manager.clone());
 
         Self {
-            permission_manager,
+            _permission_manager: permission_manager,
             repository_manager,
         }
     }

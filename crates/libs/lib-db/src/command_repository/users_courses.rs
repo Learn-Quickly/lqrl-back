@@ -1,9 +1,9 @@
-use lib_core::{interactors::error::CoreError, models::course::UserCourse};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, models::course::UserCourse};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::prelude::FromRow;
-use crate::{base::{idens::UserCourseIden, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
+use crate::{base::{idens::UserCourseIden, prep_fields_for_create, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
 
 #[derive(Fields, FromRow)]
 pub struct UsersCoursesRequest {
@@ -37,19 +37,19 @@ pub struct UsersCoursesCommandRepository;
 
 impl DbRepository for UsersCoursesCommandRepository {
     const TABLE: &'static str = "users_courses";
-
-	fn has_timestamps() -> bool {
-        false
-	}
 }
 
 impl UsersCoursesCommandRepository {
     pub async fn create(
+		ctx: &Ctx, 
         dbm: &DbManager,
         users_courses_c: UsersCoursesRequest,
     ) -> DbResult<()> {
-	    let fields = users_courses_c.not_none_fields();
-		
+		let user_id = ctx.user_id();
+
+	    let mut fields = users_courses_c.not_none_fields();
+		prep_fields_for_create::<Self>(&mut fields, user_id);
+
 	    let (columns, sea_values) = fields.for_sea_insert();
 	    let mut query = Query::insert();
 	    query

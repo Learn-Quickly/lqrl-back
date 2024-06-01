@@ -142,7 +142,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
     		user_role: UserCourseRole::Creator.to_string(),
 		};
 
-		UsersCoursesCommandRepository::create(&dbm, users_courses_c).await?;
+		UsersCoursesCommandRepository::create(ctx, &dbm, users_courses_c).await?;
 
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
@@ -203,7 +203,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 
 	async fn create_user_course(
 		&self,
-		_: &Ctx,
+		ctx: &Ctx,
 		users_courses_c: UserCourse,
 	) -> CourseResult<()> {
 		let user_course_req = UsersCoursesRequest { 
@@ -212,7 +212,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 			user_role: users_courses_c.user_role.to_string(),
 		};
 
-		UsersCoursesCommandRepository::create(&self.dbm, user_course_req).await?;
+		UsersCoursesCommandRepository::create(ctx, &self.dbm, user_course_req).await?;
 
 		Ok(())
 	}

@@ -19,17 +19,6 @@ impl PermissionManager {
 }
 
 impl PermissionManager {
-    pub async fn check_lesson_creator_permission(
-        &self, 
-        ctx: &Ctx,
-        lesson_id: i64,
-    ) -> PermissionResult<()> {
-        let lesson_repository = self.repository_manager.get_lesson_repository();
-        let lesson = lesson_repository.get_lesson(ctx, lesson_id).await?;
-
-        self.check_course_creator_permission(ctx, lesson.course_id).await
-    }
-
     pub async fn check_course_creator_permission(
         &self, 
         ctx: &Ctx,
@@ -51,17 +40,6 @@ impl PermissionManager {
         Ok(())
     }
 
-    pub async fn check_lesson_student_permission(
-        &self, 
-        ctx: &Ctx,
-        lesson_id: i64,
-    ) -> PermissionResult<()> {
-        let lesson_repository = self.repository_manager.get_lesson_repository();
-        let lesson = lesson_repository.get_lesson(ctx, lesson_id).await?;
-
-        self.check_course_student_permission(ctx, lesson.course_id).await
-    }
-
     pub async fn check_course_student_permission(
         &self, 
         ctx: &Ctx,
@@ -81,5 +59,55 @@ impl PermissionManager {
             .map_err(|_| CoreError::PermissionDenied)?;
 
         Ok(())
+    }
+
+    pub async fn check_lesson_creator_permission(
+        &self, 
+        ctx: &Ctx,
+        lesson_id: i64,
+    ) -> PermissionResult<()> {
+        let lesson_repository = self.repository_manager.get_lesson_repository();
+        let lesson = lesson_repository.get_lesson(ctx, lesson_id).await?;
+
+        self.check_course_creator_permission(ctx, lesson.course_id).await
+    }
+
+    pub async fn check_lesson_student_permission(
+        &self, 
+        ctx: &Ctx,
+        lesson_id: i64,
+    ) -> PermissionResult<()> {
+        let lesson_repository = self.repository_manager.get_lesson_repository();
+        let lesson = lesson_repository.get_lesson(ctx, lesson_id).await?;
+
+        self.check_course_student_permission(ctx, lesson.course_id).await
+    }
+
+    pub async fn check_exercise_creator_permission(
+        &self,
+        ctx: &Ctx,
+        exercise_id: i64,
+    ) -> PermissionResult<()> {
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let exercise = exercise_repository.get_exercise(ctx, exercise_id).await?;
+
+        let lesson_repository = self.repository_manager.get_lesson_repository();
+        let lesson = lesson_repository.get_lesson(ctx, exercise.lesson_id).await?;
+
+        self.check_lesson_creator_permission(ctx, lesson.id).await
+    }
+
+    pub async fn check_exercise_student_permission(
+        &self,
+        ctx: &Ctx,
+        exercise_id: i64,
+    ) -> PermissionResult<()> {
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let exercise = exercise_repository.get_exercise(ctx, exercise_id).await?;
+
+        let lesson_repository = self.repository_manager.get_lesson_repository();
+        let lesson = lesson_repository.get_lesson(ctx, exercise.lesson_id).await?;
+
+        self.check_lesson_student_permission(ctx, lesson.id).await
     }
 } 
