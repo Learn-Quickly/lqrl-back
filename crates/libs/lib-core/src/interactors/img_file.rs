@@ -9,7 +9,7 @@ pub async fn upload_file(data: &[u8]) -> Result<String, CoreError> {
     let mut file = File::create(format!("public/uploads/{}.png", img_name)).await?;
 
     file.write(&data).await?;
-    let file_url = format!("public/uploads/{}.png", img_name);
+    let file_url = format!("uploads/{}.png", img_name);
 
     Ok(file_url)
 }
