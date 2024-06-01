@@ -56,7 +56,6 @@ async fn api_get_courses_handler(
 	Query(filter_payload): Query<CourseFilterPayload>,
 ) -> AppResult<Json<CoursesPayload>> {
 	let filters = if let Some(filters) = filter_payload.filters.clone() {
-		info!(filters);
 		serde_json::from_str(&filters)?
 	} else {
 		None

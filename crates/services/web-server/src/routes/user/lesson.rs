@@ -16,7 +16,7 @@ pub fn routes(app_state: AppState) -> Router {
 		("course_id", description = "ID of the course")
 	),
 	responses(
-		(status = 200, body=CoursePayload),
+		(status = 200, body=Vec<LessonDataPayload>),
 	),
 	security(
 		("bearerAuth" = [])
