@@ -3,7 +3,7 @@ use std::sync::Arc;
 use lib_utils::time::now_utc_sec;
 use serde_json::Value;
 
-use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise_completion::{ExerciseCompletionForCreate, ExerciseCompletionForUpdate, ExerciseCompletionState}};
+use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_checker::ExerciseChecker, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::{exercise::ExerciseEstimate, exercise_completion::{ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate, ExerciseCompletionState}}};
 
 pub struct StudentExerciseInteractor {
     permission_manager: PermissionManager,
@@ -108,5 +108,34 @@ impl StudentExerciseInteractor {
         exercise_repository.update_exercise_completion(ctx, ex_comp_for_u).await?;
 
         Ok(())
+    }
+
+    pub async fn complete_exercise(&self, ctx: &Ctx, ex_comp_id: i64) -> ExerciseResult<ExerciseEstimate> {
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let ex_comp = exercise_repository.get_exercise_completion(ctx, ex_comp_id).await?;
+
+        let user_id = ctx.user_id();
+
+        if ex_comp.user_id != user_id {
+            return Err(ExerciseError::ExerciseCompletionAccessDenied { user_id, ex_comp_id }.into());
+        }
+
+        if ex_comp.state.ne(&ExerciseCompletionState::InProgress) {
+            return Err(ExerciseError::AttemptHasAlreadyBeenCompleted {}.into());
+        }
+
+        let exercise = exercise_repository.get_exercise(ctx, ex_comp.exercise_id).await?;
+
+        let exercise_estimate = ExerciseChecker::evaluate_exercise(&exercise, &ex_comp)?;
+
+        let ex_comp_for_u = ExerciseCompletionForCompleteCommand {
+            points_scored: exercise_estimate.points,
+            max_points: exercise_estimate.max_points,
+            state: exercise_estimate.state,
+        };
+
+        exercise_repository.complete_exercise_completion(ctx, ex_comp_for_u).await?;
+
+        Ok(exercise_estimate)
     }
 }

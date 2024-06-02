@@ -104,6 +104,7 @@ async fn api_update_lesson_handler(
     let lesson_u = LessonForUpdate {
         id: paylod.lesson_id,
         title: paylod.title,
+		description: paylod.description,
     };
 
 	let command_repository_manager = app_state.command_repository_manager;

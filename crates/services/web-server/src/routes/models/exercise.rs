@@ -1,3 +1,4 @@
+use lib_core::models::exercise::ExerciseEstimate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
@@ -8,7 +9,8 @@ pub struct ExerciseCreatePayload {
     pub title: String,
     pub description: String,
     pub exercise_type: String,
-    pub body: Value,
+    pub exercise_body: Value,
+    pub answer_body: Value,
     pub exercise_order: i32,
     pub difficult: String,
     pub time_to_complete: Option<i64>,  
@@ -25,7 +27,8 @@ pub struct ExerciseForUpdatePayload {
     pub title: Option<String>,
     pub description: Option<String>,
     pub exercise_type: Option<String>,
-    pub body: Option<Value>,
+    pub exercise_body: Option<Value>,
+    pub answer_body: Option<Value>,
     pub difficult: Option<String>,
     pub time_to_complete: Option<i64>,  
 }
@@ -43,11 +46,30 @@ pub struct ExerciseId {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ExerciseCompletionId {
-    pub id: i64
+    pub exercise_completion_id: i64
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ExerciseCompletionForSaveChanges {
     pub exercise_completion_id: i64,
     pub body: Value,
+}
+
+#[derive(Serialize, ToSchema)] 
+pub struct ExerciseEstimatePayload {
+    pub points: f32,
+    pub max_points: f32,
+    pub difficulty: String,
+    pub state: String,   
+}
+
+impl From<ExerciseEstimate> for ExerciseEstimatePayload {
+    fn from(value: ExerciseEstimate) -> Self {
+        Self {
+            points: value.points,
+            max_points: value.max_points,
+            difficulty: value.difficulty.to_string(),
+            state: value.state.to_string(),
+        }
+    }
 }

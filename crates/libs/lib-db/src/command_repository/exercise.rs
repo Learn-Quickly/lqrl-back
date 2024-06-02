@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
@@ -16,7 +16,8 @@ struct Exercise {
     pub description: String,
     pub exercise_type: String,
     pub exercise_order: i32,
-    pub body: Value,
+    pub exercise_body: Value,
+    pub answer_body: Value,
     pub difficult: String,
     pub time_to_complete: Option<i64>,
 }
@@ -29,7 +30,8 @@ struct ExerciseData {
     pub description: String,
     pub exercise_type: String,
     pub exercise_order: i32,
-    pub body: serde_json::Value,
+    pub exercise_body: serde_json::Value,
+    pub answer_body: serde_json::Value,
     pub difficult: String,
     pub time_to_complete: Option<i64>,
 }
@@ -43,10 +45,11 @@ impl TryFrom<ExerciseData> for lib_core::models::exercise::Exercise {
             title: value.title,
             description: value.description,
             exercise_type: value.exercise_type.try_into()?,
-            body: value.body,
             difficult: value.difficult.try_into()?,
             time_to_complete: value.time_to_complete,
             exercise_order: value.exercise_order,
+            answer_body: value.answer_body,
+            exercise_body: value.exercise_body,
         })
     }
 }
@@ -89,6 +92,20 @@ impl ExerciseCommandRepository {
 			dbm,
 		}
 	}
+
+    async fn update_body(&self, ctx: &Ctx, body: Option<serde_json::Value>, exercise_id: i64) -> ExerciseResult<()> {
+        if let Some(body) = body {
+            let exercise_for_u_b = ExerciseForUpdateBody { 
+                body: Value::Json(Some(Box::new(body))),
+            };
+
+		    base::update::<Self, ExerciseForUpdateBody>(&ctx, &self.dbm, exercise_id, exercise_for_u_b)
+			    .await
+			    .map_err(Into::<DbError>::into)?;
+        }
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -137,7 +154,8 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
             description: exercise_c.description, 
             exercise_type: exercise_c.exercise_type.to_string(), 
             exercise_order: exercise_c.exercise_order, 
-            body: Value::Json(Some(Box::new(exercise_c.body))), 
+            answer_body: Value::Json(Some(Box::new(exercise_c.answer_body))), 
+            exercise_body: Value::Json(Some(Box::new(exercise_c.exercise_body))), 
             difficult: exercise_c.difficult.to_string(), 
             time_to_complete: exercise_c.time_to_complete, 
         };
@@ -169,15 +187,8 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
 			.await
 			.map_err(Into::<DbError>::into)?;
 
-        if let Some(body) = exercise_for_u.body {
-            let exercise_for_u_b = ExerciseForUpdateBody { 
-                body: Value::Json(Some(Box::new(body))),
-            };
-
-		    base::update::<Self, ExerciseForUpdateBody>(&ctx, &self.dbm, exercise_for_u.id, exercise_for_u_b)
-			    .await
-			    .map_err(Into::<DbError>::into)?;
-        }
+        self.update_body(ctx, exercise_for_u.answer_body, exercise_for_u.id).await?;
+        self.update_body(ctx, exercise_for_u.exercise_body, exercise_for_u.id).await?;
 
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
@@ -230,6 +241,14 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
         ex_comp_for_u: ExerciseCompletionForUpdate
     ) -> ExerciseResult<()> {
         ExerciseCompletionCommandRepository::update_exercise_completion(&self.dbm, ctx, ex_comp_for_u).await
+    }
+
+    async fn complete_exercise_completion(
+        &self, 
+        ctx: &Ctx, 
+        ex_comp_for_u: ExerciseCompletionForCompleteCommand, 
+    ) -> ExerciseResult<()> {
+        ExerciseCompletionCommandRepository::complete_exercise(&self.dbm, ctx, ex_comp_for_u).await
     }
 
     async fn get_exercise_completion(&self, ctx: &Ctx, ex_comp_id: i64) -> ExerciseResult<ExerciseCompletion> {

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{ctx::Ctx, interactors::error::CoreError, models::{exercise::{Exercise, ExerciseForChangeOrder, ExerciseForCreateCommand, ExerciseForUpdate}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
+use crate::{ctx::Ctx, interactors::error::CoreError, models::{exercise::{Exercise, ExerciseForChangeOrder, ExerciseForCreateCommand, ExerciseForUpdate}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
 
 pub type ExerciseResult<T> = core::result::Result<T, CoreError>;
 
@@ -21,6 +21,8 @@ pub trait IExerciseCommandRepository {
     async fn create_exercise_completion(&self, ctx: &Ctx, ex_comp_for_c: ExerciseCompletionForCreate) -> ExerciseResult<i64>;
 
     async fn get_exercise_completion(&self, ctx: &Ctx, ex_comp_id: i64) -> ExerciseResult<ExerciseCompletion>;
-    
+
     async fn update_exercise_completion(&self, ctx: &Ctx, ex_comp_for_u: ExerciseCompletionForUpdate) -> ExerciseResult<()>;
+
+    async fn complete_exercise_completion(&self, ctx: &Ctx, ex_comp_for_u: ExerciseCompletionForCompleteCommand) -> ExerciseResult<()>;
 }

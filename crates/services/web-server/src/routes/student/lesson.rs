@@ -15,7 +15,7 @@ pub fn routes(app_state: AppState) -> Router {
 	path = "/api/course/lesson/start_lesson",
 	request_body = LessonCreatePayload,
 	responses(
-		(status = 200, description = "Lesson started successfully", body = LessonCreatedPayload),
+		(status = 200, description = "Lesson started successfully", body = StartLessonPayload),
 	),
 	security(
 		("bearerAuth" = [])

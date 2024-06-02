@@ -1,4 +1,4 @@
-use lib_core::{ctx::Ctx, interactors::error::ExerciseError, interfaces::exercise::ExerciseResult, models::exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}};
+use lib_core::{ctx::Ctx, interactors::error::ExerciseError, interfaces::exercise::ExerciseResult, models::exercise_completion::{ExerciseCompletion, ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
@@ -20,12 +20,20 @@ struct ExerciseCompletionForSaveChanges {
     pub body: Value,
 }
 
+#[derive(Fields)]
+struct ExerciseCompletionForComplete {
+    pub points_scored: f32,
+    pub max_points: f32,
+    pub state: String,
+}
+
 #[derive(Fields, FromRow)]
 struct ExerciseCompletionQuery {
     pub id: i64,
     pub exercise_id: i64,
     pub user_id: i64,
-    pub points_scored: Option<i32>,
+    pub points_scored: Option<f32>,
+    pub max_points: Option<f32>,
     pub number_of_attempts: i32,
     pub date_started: i64,
     pub date_last_changes: Option<i64>,
@@ -47,6 +55,7 @@ impl TryFrom<ExerciseCompletionQuery> for ExerciseCompletion {
             date_last_changes: value.date_last_changes,
             state: value.state.try_into()?,
             body: value.body.clone(),
+            max_points: value.max_points,
         })
     }
 }
@@ -131,6 +140,22 @@ impl ExerciseCompletionCommandRepository {
         };
 
         base::create::<Self, ExerciseCompletionForSaveChanges>(ctx, dbm, ex_comp_for_u).await.map_err(Into::<DbError>::into)?;
+        
+        Ok(())
+    }
+
+    pub async fn complete_exercise(
+        dbm: &DbManager,
+        ctx: &Ctx,
+        ex_comp_for_u: ExerciseCompletionForCompleteCommand,
+    ) -> ExerciseResult<()> {
+        let ex_comp_for_u = ExerciseCompletionForComplete {
+            points_scored: ex_comp_for_u.points_scored,
+            max_points: ex_comp_for_u.max_points,
+            state: ex_comp_for_u.state.to_string(),
+        };
+
+        base::create::<Self, ExerciseCompletionForComplete>(ctx, dbm, ex_comp_for_u).await.map_err(Into::<DbError>::into)?;
         
         Ok(())
     }
