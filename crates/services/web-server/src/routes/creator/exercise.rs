@@ -35,9 +35,10 @@ async fn api_create_exercise_handler(
         title: payload.title.clone(), 
         description: payload.description.clone(), 
         exercise_type: payload.exercise_type.try_into()?, 
-        body: payload.body.clone(), 
         difficult: payload.difficult.try_into()?, 
         time_to_complete: payload.time_to_complete,
+		answer_body: payload.answer_body.clone(),
+		exercise_body: payload.exercise_body.clone(),
     };
 
 	let command_repository_manager = app_state.command_repository_manager;
@@ -88,7 +89,8 @@ async fn api_update_exercise_handler(
         title: payload.title.clone(), 
         description: payload.description.clone(), 
         exercise_type, 
-        body: payload.body.clone(), 
+        exercise_body: payload.exercise_body.clone(), 
+        answer_body: payload.answer_body.clone(), 
         difficult, 
         time_to_complete: payload.time_to_complete,
     };

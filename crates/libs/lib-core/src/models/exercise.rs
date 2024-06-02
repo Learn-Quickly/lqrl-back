@@ -4,14 +4,17 @@ use serde_json::Value;
 
 use crate::interactors::error::{CoreError, ExerciseError};
 
+use super::exercise_completion::ExerciseCompletionState;
+
 #[derive(Clone)]
 pub struct Exercise {
     pub lesson_id: i64,
     pub title: String,
     pub description: String,
     pub exercise_type: ExerciseType,
-    pub body: Value,
-    pub difficult: ExerciseDifficult,
+    pub answer_body: Value,
+    pub exercise_body: Value,
+    pub difficult: ExerciseDifficulty,
     pub time_to_complete: Option<i64>,  
     pub exercise_order: i32,
 }
@@ -35,14 +38,25 @@ impl TryFrom<String> for ExerciseType {
 }
 
 #[derive(Clone, Display)]
-pub enum ExerciseDifficult {
+pub enum ExerciseDifficulty {
     Read,
     Easy,
     Medium,
     Hard,
 }
 
-impl TryFrom<String> for ExerciseDifficult {
+impl From<ExerciseDifficulty> for f32 {
+    fn from(value: ExerciseDifficulty) -> Self {
+        match value {
+            ExerciseDifficulty::Read => 0.0,
+            ExerciseDifficulty::Easy => 0.35,
+            ExerciseDifficulty::Medium => 0.7,
+            ExerciseDifficulty::Hard => 1.0,
+        }
+    }
+}
+
+impl TryFrom<String> for ExerciseDifficulty {
     type Error = CoreError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -51,7 +65,7 @@ impl TryFrom<String> for ExerciseDifficult {
             "Easy" => Ok(Self::Easy),
             "Medium" => Ok(Self::Medium),
             "Hard" => Ok(Self::Hard),
-            _ => Err(ExerciseError::IncorrectExerciseDifficult {}.into())
+            _ => Err(ExerciseError::IncorrectExerciseDifficulty {}.into())
         }
     }
 }
@@ -119,8 +133,9 @@ pub struct ExerciseForCreate {
     pub title: String,
     pub description: String,
     pub exercise_type: ExerciseType,
-    pub body: Value,
-    pub difficult: ExerciseDifficult,
+    pub answer_body: Value,
+    pub exercise_body: Value,
+    pub difficult: ExerciseDifficulty,
     pub time_to_complete: Option<i64>,  
 }
 
@@ -129,9 +144,10 @@ pub struct ExerciseForCreateCommand {
     pub title: String,
     pub description: String,
     pub exercise_type: ExerciseType,
-    pub body: Value,
+    pub answer_body: Value,
+    pub exercise_body: Value,
     pub exercise_order: i32,
-    pub difficult: ExerciseDifficult,
+    pub difficult: ExerciseDifficulty,
     pub time_to_complete: Option<i64>,  
 }
 
@@ -141,7 +157,15 @@ pub struct ExerciseForUpdate {
     pub title: Option<String>,
     pub description: Option<String>,
     pub exercise_type: Option<ExerciseType>,
-    pub body: Option<Value>,
-    pub difficult: Option<ExerciseDifficult>,
+    pub answer_body: Option<Value>,
+    pub exercise_body: Option<Value>,
+    pub difficult: Option<ExerciseDifficulty>,
     pub time_to_complete: Option<i64>,  
+}
+
+pub struct ExerciseEstimate {
+    pub points: f32,
+    pub max_points: f32,
+    pub difficulty: ExerciseDifficulty,
+    pub state: ExerciseCompletionState,
 }

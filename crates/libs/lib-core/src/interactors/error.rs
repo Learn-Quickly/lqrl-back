@@ -74,7 +74,7 @@ pub enum ExerciseError {
 	IncorrectDefinitionFormat,
 	IncorrectProcessStagesFormat,
 	IncorrectExerciseType,
-	IncorrectExerciseDifficult,
+	IncorrectExerciseDifficulty,
 	NotEnoughNodesError { number_of_nodes: usize },
 	CannotUpdateExerciseBodyWithoutType,
 	CannotUpdateExercisetypeWithoutBody,
@@ -84,6 +84,10 @@ pub enum ExerciseError {
 	PreviousExerciseNotFound { exercise_id: i64 },
 
 	ExerciseCompletionStateDoesNotExist { state: String },
+	ExerciseCompletionAccessDenied { user_id: i64, ex_comp_id: i64},
+	TimeToCompleteExerciseHasExpired,
+	AttemptHasAlreadyBeenCompleted,
+
 }
 
 #[serde_as]

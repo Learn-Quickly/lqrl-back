@@ -29,6 +29,7 @@ pub struct LessonDeletePayload {
 pub struct LessonUpdatePayload {
     pub lesson_id: i64,
     pub title: String,
+    pub description: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

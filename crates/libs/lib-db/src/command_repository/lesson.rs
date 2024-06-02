@@ -39,6 +39,7 @@ struct LessonForUpdateOrder {
 #[derive(Fields)]
 struct LessonForUpdateData {
     pub title: String,
+    pub description: String,
 }
 
 pub trait LessonBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
@@ -166,9 +167,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
         ctx: &Ctx, 
         lesson_for_u: LessonForUpdate
     ) -> LessonResult<()> {
-        let data = LessonForUpdateData { 
-            title:  lesson_for_u.title,
-        };
+        let data = LessonForUpdateData {title:lesson_for_u.title, description: lesson_for_u.description };
 
 		base::update::<Self, LessonForUpdateData>(&ctx, &self.dbm, lesson_for_u.id, data)
 			.await

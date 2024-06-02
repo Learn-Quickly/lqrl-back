@@ -104,8 +104,8 @@ CREATE TABLE exercise (
   description varchar(256) NOT NULL,
   exercise_type varchar(256) NOT NULL,
   exercise_order integer NOT NULL,
-  body jsonb NOT NULL,
-
+  exercise_body jsonb NOT NULL,
+  answer_body jsonb NOT NULL,
   difficult varchar(256) NOT NULL default 'Read',
   time_to_complete BIGINT,  
 
@@ -124,11 +124,12 @@ CREATE TABLE exercise_completion (
   exercise_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
 
-  points_scored integer,
+  points_scored float8,
+  max_points float8, 
   number_of_attempts integer NOT NULL,
 
   date_started timestamp with time zone NOT NULL,
-  date_completed timestamp with time zone ,
+  date_last_changes timestamp with time zone,
 
   state varchar(256) NOT NULL default 'InProgress', 
   body jsonb,

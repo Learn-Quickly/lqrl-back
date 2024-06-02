@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::{interfaces::exercise::ExerciseResult, models::exercise::{Conspect, Definition, ExerciseType, HeaderBody, Node}};
+use crate::{interfaces::exercise::ExerciseResult, models::exercise::{Conspect, Definition, ExerciseType, HeaderBody, Node, ProcessStages}};
 
 use super::error::ExerciseError;
 
@@ -57,7 +57,7 @@ impl ExerciseValidator {
     }
 
     fn validate_node_process_stages(body: &str) -> ExerciseResult<()> {
-        serde_json::from_str::<Definition>(body)
+        serde_json::from_str::<ProcessStages>(body)
             .map_err(|_| ExerciseError::IncorrectProcessStagesFormat)?;
 
         Ok(())

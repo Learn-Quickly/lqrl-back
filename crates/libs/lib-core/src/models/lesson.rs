@@ -22,6 +22,7 @@ pub struct LessonForCreateCommand {
 pub struct LessonForUpdate {
     pub id: i64,
     pub title: String,
+    pub description: String,
 }
 
 #[derive(Debug, PartialEq)]
