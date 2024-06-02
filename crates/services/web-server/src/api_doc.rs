@@ -47,6 +47,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
         creator_lesson::api_delete_lesson_handler,
 
 		user_lesson::api_get_lessons_handler,
+		user_lesson::api_get_lesson_handler,
 
 		student_lesson::api_start_lesson_handler,
 		student_lesson_progress::api_get_lesson_progresses_handler,

@@ -4,7 +4,7 @@ use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::prelude::FromRow;
 
-use crate::{base::{idens::LessonIden, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
+use crate::{base::{self, idens::LessonIden, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
 
 
 #[derive(Clone, Fields, FromRow, Debug)]
@@ -13,6 +13,7 @@ pub struct LessonData {
 	pub course_id: i64,
     pub title: String,
     pub lesson_order: i32,
+    pub description: String,
 }
 
 #[derive(Clone)]
@@ -55,4 +56,13 @@ impl LessonQueryRepository {
 
         Ok(lessons)
     }
+    
+    pub async fn get(&self, ctx: &Ctx, id: i64) -> DbResult<LessonData>
+	{
+		let result = base::get::<Self, LessonData>(ctx, &self.dbm, id)
+			.await
+			.map_err(Into::<DbError>::into)?;
+
+		Ok(result)
+	}
 }

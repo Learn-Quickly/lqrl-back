@@ -43,6 +43,7 @@ pub struct LessonDataPayload {
 	pub course_id: i64,
     pub title: String,
     pub lesson_order: i32,
+    pub description: String,
 }
 
 impl From<LessonData> for LessonDataPayload {
@@ -52,6 +53,7 @@ impl From<LessonData> for LessonDataPayload {
             course_id: lesson_data.course_id,
             title: lesson_data.title.clone(),
             lesson_order: lesson_data.lesson_order,
+            description: lesson_data.description,
         }
     }
 }
