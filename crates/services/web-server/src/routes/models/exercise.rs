@@ -43,7 +43,6 @@ pub struct ExerciseCreatePayload {
     pub exercise_type: String,
     pub exercise_body: Value,
     pub answer_body: Value,
-    pub exercise_order: i32,
     pub difficult: String,
     pub time_to_complete: Option<i32>,  
 }
