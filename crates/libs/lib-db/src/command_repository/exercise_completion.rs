@@ -29,7 +29,7 @@ struct ExerciseCompletionForComplete {
 
 #[derive(Fields, FromRow)]
 struct ExerciseCompletionQuery {
-    pub id: i64,
+    pub exercise_completion_id: i64,
     pub exercise_id: i64,
     pub user_id: i64,
     pub points_scored: Option<f32>,
@@ -46,7 +46,7 @@ impl TryFrom<ExerciseCompletionQuery> for ExerciseCompletion {
 
     fn try_from(value: ExerciseCompletionQuery) -> Result<Self, Self::Error> {
         Ok(Self {
-            id: value.id,
+            id: value.exercise_completion_id,
             exercise_id: value.exercise_id,
             user_id: value.user_id,
             points_scored: value.points_scored,

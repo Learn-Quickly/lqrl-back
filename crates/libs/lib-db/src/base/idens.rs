@@ -58,6 +58,8 @@ pub enum ExerciseIden {
 
 #[derive(Iden)]
 pub enum ExerciseCompletionIden {
+	ExerciseCompletion,
 	ExerciseId,
 	UserId,
+	ExerciseCompletionId,
 }
