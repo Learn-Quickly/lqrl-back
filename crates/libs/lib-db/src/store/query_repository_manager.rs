@@ -1,4 +1,4 @@
-use crate::query_repository::{course::CourseQueryRepository, exercise::ExerciseQueryRepository, lesson::LessonQueryRepository, lesson_progress::LessonProgressQueryRepository, user::UserQueryRepository};
+use crate::query_repository::{course::CourseQueryRepository, exercise::ExerciseQueryRepository, exercise_completion::ExerciseCompletionQueryRepository, lesson::LessonQueryRepository, lesson_progress::LessonProgressQueryRepository, user::UserQueryRepository};
 
 use super::{db_manager::DbManager, error::DbResult};
 
@@ -9,6 +9,7 @@ pub struct QueryRepositoryManager {
     lesson_repository: LessonQueryRepository,
     lesson_progress_repository: LessonProgressQueryRepository,
     exercise_repository: ExerciseQueryRepository,
+    exercise_completion_repository: ExerciseCompletionQueryRepository,
 }
 
 impl QueryRepositoryManager {
@@ -20,6 +21,7 @@ impl QueryRepositoryManager {
         let lesson_repository = LessonQueryRepository::new(dbm.clone());
         let lesson_progress_repository = LessonProgressQueryRepository::new(dbm.clone());
         let exercise_repository = ExerciseQueryRepository::new(dbm.clone());
+        let exercise_completion_repository = ExerciseCompletionQueryRepository::new(dbm.clone());
 
         let result = Self {
             user_repository,
@@ -27,6 +29,7 @@ impl QueryRepositoryManager {
             lesson_repository,
             lesson_progress_repository,
             exercise_repository,
+            exercise_completion_repository,
         };
 
         Ok(result)
@@ -50,5 +53,9 @@ impl QueryRepositoryManager {
 
     pub fn get_exercise_repository(&self) -> ExerciseQueryRepository {
         self.exercise_repository.clone()
+    }
+
+    pub fn get_exercise_completion_repository(&self) -> ExerciseCompletionQueryRepository {
+        self.exercise_completion_repository.clone()
     }
 }

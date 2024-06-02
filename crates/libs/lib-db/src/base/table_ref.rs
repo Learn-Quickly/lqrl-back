@@ -20,3 +20,7 @@ pub fn get_lesson_table_ref() -> TableRef {
 pub fn get_lesson_progress_table_ref() -> TableRef {
 	TableRef::Table(SIden("lesson_progress").into_iden())
 }
+
+pub fn get_exercise_table_ref() -> TableRef {
+	TableRef::Table(SIden("exercise").into_iden())
+}
