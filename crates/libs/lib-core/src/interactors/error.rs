@@ -85,6 +85,7 @@ pub enum ExerciseError {
 
 	ExerciseCompletionStateDoesNotExist { state: String },
 	ExerciseCompletionAccessDenied { user_id: i64, ex_comp_id: i64},
+	TimeToCompleteExerciseHasExpired,
 }
 
 #[serde_as]

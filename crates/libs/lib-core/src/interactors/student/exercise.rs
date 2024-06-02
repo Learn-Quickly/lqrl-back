@@ -88,12 +88,21 @@ impl StudentExerciseInteractor {
         }
 
         let exercise = exercise_repository.get_exercise(ctx, ex_comp.exercise_id).await?;
+        
+        let now = now_utc_sec();
+        if let Some(time_to_complete) = exercise.time_to_complete {
+            let deadline = time_to_complete + ex_comp.date_started;
+
+            if now > deadline {
+                return Err(ExerciseError::TimeToCompleteExerciseHasExpired {}.into());
+            }
+        }
 
         ExerciseValidator::validate_exercise(&exercise.exercise_type, exercise_body_for_save.clone())?;
 
         let ex_comp_for_u = ExerciseCompletionForUpdate {
             body: exercise_body_for_save,
-            date_last_changes: now_utc_sec(),
+            date_last_changes: now,
         };
 
         exercise_repository.update_exercise_completion(ctx, ex_comp_for_u).await?;
