@@ -287,7 +287,7 @@ async fn api_get_created_courses_handler(
 		GetAttendatsPayload,	
 	),
 	responses(
-		(status = 200, body = Vec<UsersPayload>),
+		(status = 200, body = UsersPayload),
 	),
 	security(
 		("bearerAuth" = [])
