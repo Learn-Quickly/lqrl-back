@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use lib_utils::time::now_utc_sec;
+use serde_json::Value;
 
-use crate::{ctx::Ctx, interactors::permission_manager::PermissionManager, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise_completion::{ExerciseCompletionForCreate, ExerciseCompletionState}};
+use crate::{ctx::Ctx, interactors::{error::ExerciseError, exercise_validator::ExerciseValidator, permission_manager::PermissionManager}, interfaces::{command_repository_manager::ICommandRepositoryManager, exercise::ExerciseResult}, models::exercise_completion::{ExerciseCompletionForCreate, ExerciseCompletionForUpdate, ExerciseCompletionState}};
 
 pub struct StudentExerciseInteractor {
     permission_manager: PermissionManager,
@@ -27,7 +28,7 @@ impl StudentExerciseInteractor {
         &self,
         ctx: &Ctx,
         exercise_id: i64
-    ) -> ExerciseResult<()> {
+    ) -> ExerciseResult<i64> {
         self.permission_manager.check_exercise_student_permission(ctx, exercise_id).await?;
         self.check_exercise_order(ctx, exercise_id).await?;
 
@@ -69,5 +70,34 @@ impl StudentExerciseInteractor {
             Some(_) => Ok(()),
             None => Err(crate::interactors::error::ExerciseError::PreviousExerciseNotCompleted { exercise_id: previus_ex_id }.into()),
         }
+    }
+
+    pub async fn save_exercise_execution_changes(
+        &self, 
+        ctx: &Ctx, 
+        ex_comp_id: i64, 
+        exercise_body_for_save: Value,
+    ) -> ExerciseResult<()> {
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let ex_comp = exercise_repository.get_exercise_completion(ctx, ex_comp_id).await?;
+
+        let user_id = ctx.user_id();
+
+        if ex_comp.user_id != user_id {
+            return Err(ExerciseError::ExerciseCompletionAccessDenied { user_id, ex_comp_id }.into());
+        }
+
+        let exercise = exercise_repository.get_exercise(ctx, ex_comp.exercise_id).await?;
+
+        ExerciseValidator::validate_exercise(&exercise.exercise_type, exercise_body_for_save.clone())?;
+
+        let ex_comp_for_u = ExerciseCompletionForUpdate {
+            body: exercise_body_for_save,
+            date_last_changes: now_utc_sec(),
+        };
+
+        exercise_repository.update_exercise_completion(ctx, ex_comp_for_u).await?;
+
+        Ok(())
     }
 }

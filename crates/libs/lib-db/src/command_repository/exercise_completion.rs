@@ -1,6 +1,6 @@
-use lib_core::{ctx::Ctx, interactors::error::ExerciseError, interfaces::exercise::ExerciseResult, models::exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate}};
+use lib_core::{ctx::Ctx, interactors::error::ExerciseError, interfaces::exercise::ExerciseResult, models::exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}};
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, PostgresQueryBuilder, Query};
+use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 
@@ -14,6 +14,12 @@ struct ExerciseCompletionData {
     pub date_started: i64,
 }
 
+#[derive(Fields)]
+struct ExerciseCompletionForSaveChanges {
+    pub date_last_changes: i64,
+    pub body: Value,
+}
+
 #[derive(Fields, FromRow)]
 struct ExerciseCompletionQuery {
     pub id: i64,
@@ -22,7 +28,7 @@ struct ExerciseCompletionQuery {
     pub points_scored: Option<i32>,
     pub number_of_attempts: i32,
     pub date_started: i64,
-    pub date_completed: Option<i64>,
+    pub date_last_changes: Option<i64>,
     pub state: String,   
     pub body: serde_json::Value,
 }
@@ -38,7 +44,7 @@ impl TryFrom<ExerciseCompletionQuery> for ExerciseCompletion {
             points_scored: value.points_scored,
             number_of_attempts: value.number_of_attempts,
             date_started: value.date_started,
-            date_completed: value.date_completed,
+            date_last_changes: value.date_last_changes,
             state: value.state.try_into()?,
             body: value.body.clone(),
         })
@@ -85,11 +91,23 @@ impl ExerciseCompletionCommandRepository {
         Ok(result)
     }
 
+    pub async fn get(
+        ctx: &Ctx,
+        dbm: &DbManager, 
+        id: i64,
+    ) -> ExerciseResult<ExerciseCompletion> {
+        let result = base::get::<Self, ExerciseCompletionQuery>(ctx, dbm, id)
+            .await
+            .map_err(Into::<DbError>::into)?;
+
+        Ok(result.try_into()?)
+    }
+
     pub async fn create_exercise_completion(
         ctx: &Ctx, 
         dbm: &DbManager, 
         ex_comp_for_c: ExerciseCompletionForCreate,
-    ) -> ExerciseResult<()> {
+    ) -> ExerciseResult<i64> {
         let ex_comp_for_c = ExerciseCompletionData {
             exercise_id: ex_comp_for_c.exercise_id,
             user_id: ex_comp_for_c.user_id,
@@ -97,8 +115,23 @@ impl ExerciseCompletionCommandRepository {
             date_started: ex_comp_for_c.date_started,
         };
 
-        base::create::<Self, ExerciseCompletionData>(ctx, dbm, ex_comp_for_c).await.map_err(Into::<DbError>::into)?;
+        let id = base::create::<Self, ExerciseCompletionData>(ctx, dbm, ex_comp_for_c).await.map_err(Into::<DbError>::into)?;
 
+        Ok(id)
+    }
+
+    pub async fn update_exercise_completion(
+        dbm: &DbManager, 
+        ctx: &Ctx, 
+        ex_comp_for_u: ExerciseCompletionForUpdate,
+    ) -> ExerciseResult<()> {
+        let ex_comp_for_u = ExerciseCompletionForSaveChanges {
+            date_last_changes: ex_comp_for_u.date_last_changes,
+            body: Value::Json(Some(Box::new(ex_comp_for_u.body))),
+        };
+
+        base::create::<Self, ExerciseCompletionForSaveChanges>(ctx, dbm, ex_comp_for_u).await.map_err(Into::<DbError>::into)?;
+        
         Ok(())
     }
 }

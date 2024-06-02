@@ -84,6 +84,7 @@ pub enum ExerciseError {
 	PreviousExerciseNotFound { exercise_id: i64 },
 
 	ExerciseCompletionStateDoesNotExist { state: String },
+	ExerciseCompletionAccessDenied { user_id: i64, ex_comp_id: i64},
 }
 
 #[serde_as]

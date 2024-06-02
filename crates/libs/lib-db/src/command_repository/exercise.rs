@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate}}};
+use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
@@ -220,7 +220,19 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
         &self,
         ctx: &Ctx, 
         ex_comp_for_c: ExerciseCompletionForCreate
-    ) -> ExerciseResult<()> {
+    ) -> ExerciseResult<i64> {
         ExerciseCompletionCommandRepository::create_exercise_completion(ctx, &self.dbm, ex_comp_for_c).await
+    }
+
+    async fn update_exercise_completion(
+        &self, 
+        ctx: &Ctx, 
+        ex_comp_for_u: ExerciseCompletionForUpdate
+    ) -> ExerciseResult<()> {
+        ExerciseCompletionCommandRepository::update_exercise_completion(&self.dbm, ctx, ex_comp_for_u).await
+    }
+
+    async fn get_exercise_completion(&self, ctx: &Ctx, ex_comp_id: i64) -> ExerciseResult<ExerciseCompletion> {
+        ExerciseCompletionCommandRepository::get(ctx, &self.dbm, ex_comp_id).await
     }
 }

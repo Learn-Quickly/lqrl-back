@@ -58,6 +58,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 		creator_exercise::api_exercise_change_order_handler,
 
 		student_exercise::api_start_exercise_handler,
+		student_exercise::api_save_changes_handler,
     ),
     components(
 		schemas(
@@ -101,6 +102,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 			models::exercise::ExerciseChangeOrderPayload,
 
 			models::exercise::ExerciseId,
+			models::exercise::ExerciseCompletionForSaveChanges,
 		)
     ),
     modifiers(&SecurityAddon),

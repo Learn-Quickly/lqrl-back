@@ -40,3 +40,14 @@ pub struct ExerciseChangeOrderPayload {
 pub struct ExerciseId {
     pub exercise_id: i64,
 }
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ExerciseCompletionId {
+    pub id: i64
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ExerciseCompletionForSaveChanges {
+    pub exercise_completion_id: i64,
+    pub body: Value,
+}

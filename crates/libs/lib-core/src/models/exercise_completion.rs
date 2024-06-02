@@ -9,7 +9,7 @@ pub struct ExerciseCompletion {
     pub points_scored: Option<i32>,
     pub number_of_attempts: i32,
     pub date_started: i64,
-    pub date_completed: Option<i64>,
+    pub date_last_changes: Option<i64>,
     pub state: ExerciseCompletionState,   
     pub body: Value,
 }
@@ -39,4 +39,9 @@ pub struct ExerciseCompletionForCreate {
     pub user_id: i64,
     pub number_of_attempts: usize,
     pub date_started: i64,
+}
+
+pub struct ExerciseCompletionForUpdate {
+    pub body: Value,
+    pub date_last_changes: i64,
 }

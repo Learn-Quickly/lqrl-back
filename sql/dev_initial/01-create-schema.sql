@@ -128,7 +128,7 @@ CREATE TABLE exercise_completion (
   number_of_attempts integer NOT NULL,
 
   date_started timestamp with time zone NOT NULL,
-  date_completed timestamp with time zone ,
+  date_last_changes timestamp with time zone,
 
   state varchar(256) NOT NULL default 'InProgress', 
   body jsonb,
