@@ -35,7 +35,7 @@ async fn main() -> AppResult<()> {
 		.init();
 
 	// -- FOR DEV ONLY
-	// _dev_utils::init_dev().await;
+	_dev_utils::init_dev().await;
 
 	let app_state = AppState::new().await?;
 

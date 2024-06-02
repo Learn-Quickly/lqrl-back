@@ -5,6 +5,14 @@ use utoipa::{IntoParams, ToSchema};
 pub struct UserPayload {
     pub id: i64,
     pub username: String,
+    pub date_registered: i64,
+    pub number_of_completed_lessons: i64,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct UsersPayload {
+    pub users: Vec<UserPayload>,
+    pub count: i64,
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]

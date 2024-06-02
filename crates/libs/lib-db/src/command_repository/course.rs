@@ -137,9 +137,10 @@ impl ICourseCommandRepository for CourseCommandRepository {
 		)?;
 
 		let users_courses_c = UsersCoursesRequest {
-    		user_id: ctx.user_id(),
-    		course_id: course_id,
-    		user_role: UserCourseRole::Creator.to_string(),
+			user_id: ctx.user_id(),
+			course_id: course_id,
+			user_role: UserCourseRole::Creator.to_string(), 
+			date_registered: from_unix_timestamp(course_c.date_created).map_err(DbError::DateError)?, 
 		};
 
 		UsersCoursesCommandRepository::create(ctx, &dbm, users_courses_c).await?;
@@ -210,6 +211,7 @@ impl ICourseCommandRepository for CourseCommandRepository {
 			user_id: users_courses_c.user_id, 
 			course_id: users_courses_c.course_id, 
 			user_role: users_courses_c.user_role.to_string(),
+			date_registered: from_unix_timestamp(users_courses_c.date_registered).map_err(DbError::DateError)?, 
 		};
 
 		UsersCoursesCommandRepository::create(ctx, &self.dbm, user_course_req).await?;

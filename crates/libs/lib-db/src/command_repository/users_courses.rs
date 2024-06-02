@@ -3,6 +3,7 @@ use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::prelude::FromRow;
+use time::OffsetDateTime;
 use crate::{base::{idens::UserCourseIden, prep_fields_for_create, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
 
 #[derive(Fields, FromRow)]
@@ -10,6 +11,7 @@ pub struct UsersCoursesRequest {
     pub user_id: i64,
     pub course_id: i64,
     pub user_role: String,
+	pub date_registered: OffsetDateTime,
 }
 
 impl TryFrom<UsersCoursesRequest> for UserCourse {
@@ -22,6 +24,7 @@ impl TryFrom<UsersCoursesRequest> for UserCourse {
     		user_id: value.user_id,
     		course_id: value.course_id,
     		user_role,
+    		date_registered: value.date_registered.unix_timestamp(),
 		};
 
 		Ok(result)

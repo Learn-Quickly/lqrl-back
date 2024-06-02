@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use lib_utils::time::now_utc_sec;
+
 use crate::{
     ctx::Ctx,
     interactors::{
@@ -53,10 +55,13 @@ impl StudentCourseInteractor {
             return Err(CourseError::CannotRegisterForCourseTwice.into());
         }
 
+        let date_registered = now_utc_sec();
+
         let course_for_register = UserCourse {
             user_id: ctx.user_id(),
             course_id,
             user_role: crate::models::course::UserCourseRole::Student,
+            date_registered,
         };
 
         course_repository.create_user_course(ctx, course_for_register).await?;

@@ -51,6 +51,7 @@ pub struct CourseForCreate {
 	pub course_type: String,
 	pub price: f64,
 	pub color: String,
+	pub date_created: i64,
 }
 
 #[derive(TypedBuilder)]
@@ -86,6 +87,7 @@ pub struct UserCourse {
     pub user_id: i64,
     pub course_id: i64,
     pub user_role: UserCourseRole,
+	pub date_registered: i64,
 }
 
 #[derive(PartialEq, Eq)]

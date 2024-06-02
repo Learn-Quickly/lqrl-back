@@ -16,3 +16,7 @@ pub fn get_users_courses_table_ref() -> TableRef {
 pub fn get_lesson_table_ref() -> TableRef {
 	TableRef::Table(SIden("lesson").into_iden())
 }
+
+pub fn get_lesson_progress_table_ref() -> TableRef {
+	TableRef::Table(SIden("lesson_progress").into_iden())
+}
