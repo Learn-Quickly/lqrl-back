@@ -13,9 +13,9 @@ pub fn routes(app_state: AppState) -> Router {
 #[utoipa::path(
 	put,
 	path = "/api/course/lesson/start_lesson",
-	request_body = LessonCreatePayload,
+	request_body = StartLessonPayload,
 	responses(
-		(status = 200, description = "Lesson started successfully", body = StartLessonPayload),
+		(status = 200, description = "Lesson started successfully"),
 	),
 	security(
 		("bearerAuth" = [])
