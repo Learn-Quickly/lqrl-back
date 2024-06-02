@@ -109,7 +109,7 @@ CREATE TABLE exercise (
   exercise_body jsonb NOT NULL,
   answer_body jsonb NOT NULL,
   difficult varchar(256) NOT NULL default 'Read',
-  time_to_complete BIGINT,  
+  time_to_complete integer,  
 
   CONSTRAINT fk_lesson FOREIGN KEY (lesson_id) REFERENCES lesson(id) ON DELETE CASCADE,
 

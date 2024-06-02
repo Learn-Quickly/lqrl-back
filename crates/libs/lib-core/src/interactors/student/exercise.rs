@@ -91,7 +91,7 @@ impl StudentExerciseInteractor {
         
         let now = now_utc_sec();
         if let Some(time_to_complete) = exercise.time_to_complete {
-            let deadline = time_to_complete + ex_comp.date_started;
+            let deadline = time_to_complete as i64 + ex_comp.date_started;
 
             if now > deadline {
                 return Err(ExerciseError::TimeToCompleteExerciseHasExpired {}.into());

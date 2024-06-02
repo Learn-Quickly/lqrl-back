@@ -15,7 +15,7 @@ pub struct Exercise {
     pub answer_body: Value,
     pub exercise_body: Value,
     pub difficult: ExerciseDifficulty,
-    pub time_to_complete: Option<i64>,  
+    pub time_to_complete: Option<i32>,  
     pub exercise_order: i32,
 }
 
@@ -136,7 +136,7 @@ pub struct ExerciseForCreate {
     pub answer_body: Value,
     pub exercise_body: Value,
     pub difficult: ExerciseDifficulty,
-    pub time_to_complete: Option<i64>,  
+    pub time_to_complete: Option<i32>,  
 }
 
 pub struct ExerciseForCreateCommand {
@@ -148,7 +148,7 @@ pub struct ExerciseForCreateCommand {
     pub exercise_body: Value,
     pub exercise_order: i32,
     pub difficult: ExerciseDifficulty,
-    pub time_to_complete: Option<i64>,  
+    pub time_to_complete: Option<i32>,  
 }
 
 #[derive(Clone)]

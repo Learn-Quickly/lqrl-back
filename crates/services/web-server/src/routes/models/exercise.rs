@@ -1,7 +1,39 @@
 use lib_core::models::exercise::ExerciseEstimate;
+use lib_db::query_repository::exercise::ExerciseQuery;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ExercisePayload {
+    pub exercise_id: i64,
+    pub lesson_id: i64,
+    pub title: String,
+    pub description: String,
+    pub exercise_type: String,
+    pub exercise_body: Value,
+    pub answer_body: Value,
+    pub exercise_order: i32,
+    pub difficult: String,
+    pub time_to_complete: Option<i32>,  
+}
+
+impl From<ExerciseQuery> for ExercisePayload {
+    fn from(value: ExerciseQuery) -> Self {
+        Self {
+            exercise_id: value.id,
+            lesson_id: value.lesson_id,
+            title: value.title,
+            description: value.description.clone(),
+            exercise_type: value.exercise_type.to_string(),
+            exercise_body: value.exercise_body.clone(),
+            answer_body: value.answer_body,
+            exercise_order: value.exercise_order,
+            difficult: value.difficult,
+            time_to_complete: value.time_to_complete,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ExerciseCreatePayload {
@@ -11,9 +43,8 @@ pub struct ExerciseCreatePayload {
     pub exercise_type: String,
     pub exercise_body: Value,
     pub answer_body: Value,
-    pub exercise_order: i32,
     pub difficult: String,
-    pub time_to_complete: Option<i64>,  
+    pub time_to_complete: Option<i32>,  
 }
 
 #[derive(Debug, Serialize, ToSchema)]
