@@ -66,6 +66,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 			user::UserChangePwdPayload,
 			models::user::GetAttendatsPayload,
 			models::user::UserPayload,
+			models::user::UsersPayload,
 			register::RegisterPayload,
 			login::RefreshTokenPayload,
 

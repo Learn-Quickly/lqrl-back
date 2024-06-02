@@ -49,6 +49,8 @@ CREATE TABLE users_courses (
   course_id BIGINT NOT NULL,
   user_role varchar(256) NOT NULL default 'Student',
 
+  date_registered timestamp with time zone NOT NULL,
+
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE,
   CONSTRAINT fk_course FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE CASCADE,
 

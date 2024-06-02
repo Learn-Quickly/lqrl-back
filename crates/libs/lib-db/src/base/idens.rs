@@ -46,6 +46,7 @@ pub enum LessonProgressIden {
 	LessonProgress,
 	LessonId,
 	UserId,
+	State,
 }
 
 #[derive(Iden)]

@@ -1,10 +1,11 @@
 use axum::{extract::{Multipart, Path, Query, State}, routing::{get, post, put}, Json, Router};
 use lib_core::{interactors::creator::course::CreatorCourseInteractor, models::course::{CourseForCreate, CourseForUpdate}};
 use lib_db::query_repository::course::CourseQuery;
+use lib_utils::time::now_utc_sec;
 use serde_json::{json, Value};
 use tracing::info;
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::{course::{CourseCreateDraftPayload, CourseFilterPayload, CourseId, CoursePayload, CourseUpdatePayload, CoursesPayload, CreatedCourseDraft}, user::{GetAttendatsPayload, UserPayload}}};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::{course::{CourseCreateDraftPayload, CourseFilterPayload, CourseId, CoursePayload, CourseUpdatePayload, CoursesPayload, CreatedCourseDraft}, user::{GetAttendatsPayload, UserPayload, UsersPayload}}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
@@ -38,11 +39,12 @@ async fn api_create_course_draft_handler(
 	let ctx = ctx.0;
 
 	let course_c = CourseForCreate {
-    	title: paylod.title,
-    	description: paylod.description,
-    	course_type: paylod.course_type,
-    	price: paylod.price,
-    	color: paylod.color,
+		title: paylod.title, 
+		description: paylod.description,
+		course_type: paylod.course_type,
+		price: paylod.price, 
+		color: paylod.color, 
+		date_created: now_utc_sec(), 
 	};
 
 	let command_repository_manager = app_state.command_repository_manager;
@@ -232,6 +234,7 @@ async fn api_set_course_img_handler(
 		("bearerAuth" = [])
 	)
 )]
+
 async fn api_get_created_courses_handler(
 	ctx: CtxW,
 	State(app_state): State<AppState>,
@@ -284,7 +287,7 @@ async fn api_get_created_courses_handler(
 		GetAttendatsPayload,	
 	),
 	responses(
-		(status = 200, body = Vec<UserPayload>),
+		(status = 200, body = Vec<UsersPayload>),
 	),
 	security(
 		("bearerAuth" = [])
@@ -294,7 +297,7 @@ async fn api_get_attendants(
 	ctx: CtxW,
 	State(app_state): State<AppState>,
 	Query(payload): Query<GetAttendatsPayload>,
-) -> AppResult<Json<Vec<UserPayload>>> {
+) -> AppResult<Json<UsersPayload>> {
 	let ctx = ctx.0;
 	let course_id = payload.course_id;
 
@@ -307,12 +310,21 @@ async fn api_get_attendants(
 	};
 
 	let user_query_repo = app_state.query_repository_manager.get_user_repository();
-	let users = user_query_repo.get_attendants(course_id, list_options).await?;
+	let users = user_query_repo.get_attendants(&ctx, course_id, list_options).await?;
+	let count = user_query_repo.get_number_of_attendance(course_id).await?;
 
-	let result = users
+
+	let users_result = users
 		.iter()
-		.map(|user| UserPayload { id: user.id, username: user.username.clone() })
+		.map(|user| UserPayload { 
+			id: user.id,
+			username: user.username.clone(), 
+			number_of_completed_lessons: user.number_of_completed_lessons,
+			date_registered: user.date_registered,
+		})
 		.collect();
+
+	let result = UsersPayload { users: users_result, count  };
 
 	Ok(Json(result))
 }
