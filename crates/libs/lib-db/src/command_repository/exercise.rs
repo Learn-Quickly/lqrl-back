@@ -19,7 +19,7 @@ struct Exercise {
     pub exercise_body: Value,
     pub answer_body: Value,
     pub difficult: String,
-    pub time_to_complete: Option<i64>,
+    pub time_to_complete: Option<i32>,
 }
 
 #[derive(Fields, FromRow)]
@@ -33,7 +33,7 @@ struct ExerciseData {
     pub exercise_body: serde_json::Value,
     pub answer_body: serde_json::Value,
     pub difficult: String,
-    pub time_to_complete: Option<i64>,
+    pub time_to_complete: Option<i32>,
 }
 
 impl TryFrom<ExerciseData> for lib_core::models::exercise::Exercise {

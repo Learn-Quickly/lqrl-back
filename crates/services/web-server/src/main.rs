@@ -74,6 +74,9 @@ async fn main() -> AppResult<()> {
 	let routes_student_exercise = routes::student::exercise::routes(app_state.clone())
 		.route_layer(axum_middleware::from_fn(mw_ctx_require));
 
+	let routes_user_exercise = routes::user::exercise::routes(app_state.clone())
+		.route_layer(axum_middleware::from_fn(mw_ctx_require));
+
 	let routes_all = Router::new()
 		.nest("/api/course", routes_user_course)
 		.nest("/api/course", routes_student_course)
@@ -84,6 +87,7 @@ async fn main() -> AppResult<()> {
 		.nest("/api/course/lesson", routes_student_lesson_progress)
 		.nest("/api/course/lesson/exercise", routes_creator_exercise)
 		.nest("/api/course/lesson/exercise", routes_student_exercise)
+		.nest("/api/course/lesson/exercise", routes_user_exercise)
 		.nest("/api/user", routes_user)
         .layer(axum_middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolver))
 		.merge(login::routes(app_state.clone()))
