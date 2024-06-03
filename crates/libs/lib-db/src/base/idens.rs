@@ -62,4 +62,5 @@ pub enum ExerciseCompletionIden {
 	ExerciseId,
 	UserId,
 	ExerciseCompletionId,
+	State,
 }

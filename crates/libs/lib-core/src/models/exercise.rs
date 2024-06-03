@@ -37,7 +37,7 @@ impl TryFrom<String> for ExerciseType {
     }
 }
 
-#[derive(Clone, Display)]
+#[derive(Clone, Display, PartialEq, Eq)]
 pub enum ExerciseDifficulty {
     Read,
     Easy,

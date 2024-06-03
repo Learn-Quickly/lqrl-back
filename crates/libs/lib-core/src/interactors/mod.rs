@@ -4,5 +4,6 @@ pub mod user;
 pub mod error;
 pub mod permission_manager;
 pub mod img_file;
+pub mod cron_job_exercise;
 pub(crate) mod exercise_validator;
 pub(crate) mod exercise_checker;

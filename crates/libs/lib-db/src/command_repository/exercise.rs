@@ -254,4 +254,8 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
     async fn get_exercise_completion(&self, ctx: &Ctx, ex_comp_id: i64) -> ExerciseResult<ExerciseCompletion> {
         ExerciseCompletionCommandRepository::get(ctx, &self.dbm, ex_comp_id).await
     }
+
+    async fn get_uncompleted_exercises(&self, ctx: &Ctx) -> ExerciseResult<Vec<ExerciseCompletion>> {
+        ExerciseCompletionCommandRepository::get_uncompleted_exercises(&self.dbm, ctx).await
+    }
 }
