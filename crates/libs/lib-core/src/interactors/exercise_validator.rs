@@ -16,7 +16,7 @@ impl ExerciseValidator {
 
     fn validate_conspect_body(body: Value) -> ExerciseResult<()> {
         let body: Conspect = serde_json::from_value(body)
-            .map_err(|_| ExerciseError::IncorrectExerciseBodyFormat)?;
+            .map_err(|err| ExerciseError::IncorrectExerciseBodyFormat { description: err.to_string() })?;
 
         Self::validate_nodes(&body.nodes)
     }
