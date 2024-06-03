@@ -27,6 +27,8 @@ COPY --from=builder /app/sql .
 COPY --from=builder /app/target/release/exercise_cron_job .
 COPY --from=builder /app/entrypoint.sh .
 
+RUN chmod +x 
+
 # Expose the port your Axum-web application will listen on
 EXPOSE 8080
 
