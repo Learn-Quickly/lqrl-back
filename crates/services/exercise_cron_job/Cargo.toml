@@ -1,0 +1,17 @@
+[package]
+name = "exercise_cron_job"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lib-db = { path = "../../libs/lib-db"}
+lib-core = { path = "../../libs/lib-core"}
+
+tokio = { version = "1", features = ["full"] }
+chrono = "0.4.38"
+cron = "0.12.1"
+
+[lints]
+workspace = true

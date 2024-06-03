@@ -24,8 +24,10 @@ WORKDIR /lqrl-back
 # Copy the built binary from the builder stage to the final image
 COPY --from=builder /app/target/release/web-server .
 COPY --from=builder /app/sql .
+COPY --from=builder /app/target/release/exercise_cron_job .
+COPY --from=builder /app/start.sh .
 
 # Expose the port your Axum-web application will listen on
 EXPOSE 8080
 
-CMD ["./web-server"]
+CMD ["./start.sh"]

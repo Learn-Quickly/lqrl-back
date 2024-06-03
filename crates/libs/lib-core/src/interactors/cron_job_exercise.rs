@@ -19,20 +19,23 @@ impl CronJobExercise {
 }
 
 impl CronJobExercise {
-    pub async fn complete_overdue_exercises(&self) -> ExerciseResult<()> {
+    /// return number of completed exercises 
+    pub async fn complete_overdue_exercises(&self) -> ExerciseResult<i32> {
         let ctx = Ctx::root_ctx();
 
         let exercise_repository = self.repository_manager.get_exercise_repository();
         let uncompleted_exercises = exercise_repository.get_uncompleted_exercises(&ctx).await?;
 
+        let mut result = 0;
+
         for exercise_completion in uncompleted_exercises {
-            self.complete_exercise(&ctx, exercise_completion).await?;
+            result += self.complete_exercise(&ctx, exercise_completion).await?;
         }
 
-        Ok(())
+        Ok(result)
     }
 
-    pub async fn complete_exercise(&self, ctx: &Ctx, ex_comp: ExerciseCompletion) -> ExerciseResult<()> {
+    async fn complete_exercise(&self, ctx: &Ctx, ex_comp: ExerciseCompletion) -> ExerciseResult<i32> {
         let exercise_repository = self.repository_manager.get_exercise_repository();
 
         let exercise = exercise_repository.get_exercise(ctx, ex_comp.exercise_id).await?;
@@ -41,8 +44,8 @@ impl CronJobExercise {
         if let Some(time_to_complete) = exercise.time_to_complete {
             let deadline = time_to_complete as i64 + ex_comp.date_started;
 
-            if now <= deadline {
-                return Ok(());
+            if now < deadline {
+                return Ok(0);
             }
         }
 
@@ -56,6 +59,6 @@ impl CronJobExercise {
 
         exercise_repository.complete_exercise_completion(ctx, ex_comp_for_u).await?;
 
-        Ok(())
+        Ok(1)
     }
 }
