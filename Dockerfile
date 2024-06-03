@@ -25,9 +25,9 @@ WORKDIR /lqrl-back
 COPY --from=builder /app/target/release/web-server .
 COPY --from=builder /app/sql .
 COPY --from=builder /app/target/release/exercise_cron_job .
-COPY --from=builder /app/start.sh .
+COPY --from=builder /app/entrypoint.sh .
 
 # Expose the port your Axum-web application will listen on
 EXPOSE 8080
 
-CMD ["./start.sh"]
+CMD ["./entrypoint.sh"]
