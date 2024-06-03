@@ -26,7 +26,6 @@ COPY --from=builder /app/target/release/web-server .
 COPY --from=builder /app/sql .
 COPY --from=builder /app/target/release/exercise_cron_job .
 COPY --from=builder /app/entrypoint.sh .
-COPY --from=builder /app/services/web-server/public ./public
 
 RUN chmod +x entrypoint.sh
 
