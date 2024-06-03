@@ -14,7 +14,7 @@ pub fn routes(app_state: AppState) -> Router {
 
 #[utoipa::path(
 	get,
-	path = "/api/course/lesson/exercise/get_lesson_exercises",
+	path = "/api/course/lesson/exercise/get_lesson_exercises/{lesson_id}",
 	params(
 		("lesson_id", description = "ID of the lesson")
 	),
@@ -74,9 +74,9 @@ async fn api_get_exercise_handler(
 
 #[utoipa::path(
 	get,
-	path = "/api/course/lesson/exercise/get_exercise_completions",
+	path = "/api/course/lesson/exercise/get_exercise_completions/{exercise_id}",
 	params(
-		("exercis_id", description = "ID of the exercise")
+		("exercise_id", description = "ID of the exercise")
 	),
 	responses(
 		(status = 200, body=Vec<ExerciseCompletionPayload>),
@@ -108,7 +108,7 @@ async fn api_get_exercise_completions_handler(
 
 #[utoipa::path(
 	get,
-	path = "/api/course/lesson/exercise/get_exercises_completions",
+	path = "/api/course/lesson/exercise/get_exercises_completions/{lesson_id}",
 	params(
 		("lesson_id", description = "ID of the lesson")
 	),
