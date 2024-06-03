@@ -25,4 +25,6 @@ pub trait IExerciseCommandRepository {
     async fn update_exercise_completion(&self, ctx: &Ctx, ex_comp_for_u: ExerciseCompletionForUpdate) -> ExerciseResult<()>;
 
     async fn complete_exercise_completion(&self, ctx: &Ctx, ex_comp_for_u: ExerciseCompletionForCompleteCommand) -> ExerciseResult<()>;
+
+    async fn get_uncompleted_exercises(&self, ctx: &Ctx) -> ExerciseResult<Vec<ExerciseCompletion>>;
 }

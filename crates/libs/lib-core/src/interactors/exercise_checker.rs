@@ -13,6 +13,15 @@ pub struct ExerciseChecker;
 
 impl ExerciseChecker {
     pub fn evaluate_exercise(exercise: &Exercise, ex_comp: &ExerciseCompletion) -> ExerciseResult<ExerciseEstimate> {
+        if exercise.difficult.eq(&crate::models::exercise::ExerciseDifficulty::Read) {
+            return Ok(ExerciseEstimate {
+                points: 0.0,
+                max_points: 0.0,
+                difficulty: crate::models::exercise::ExerciseDifficulty::Read,
+                state: ExerciseCompletionState::Succeeded,
+            });
+        }
+
         let conspect_estimate = match exercise.exercise_type {
             crate::models::exercise::ExerciseType::Conspect | 
             crate::models::exercise::ExerciseType::InteractiveConspect => Self::evaluate_conspects_bodies(exercise.answer_body.clone(), ex_comp.body.clone())?,

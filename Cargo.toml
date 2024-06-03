@@ -13,9 +13,10 @@ members = [
 
     # -- Application Services
     "crates/services/web-server",
+    "crates/services/exercise_cron_job",
 
     # -- Tools
-    "crates/tools/gen-key", "crates/libs/lib-core",    
+    "crates/tools/gen-key", "crates/libs/lib-core",     
 ]
 
 # NOTE: Only the crates that are utilized in two or more sub-crates and benefit from global management

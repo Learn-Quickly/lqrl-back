@@ -159,4 +159,30 @@ impl ExerciseCompletionCommandRepository {
         
         Ok(())
     }
+
+    pub async fn get_uncompleted_exercises(
+        dbm: &DbManager,
+        _: &Ctx,
+    ) -> ExerciseResult<Vec<ExerciseCompletion>> {
+        let mut query = Query::select();
+        query
+            .from(Self::table_ref())
+            .columns(ExerciseCompletionQuery::field_column_refs())
+            .and_where(Expr::col(ExerciseCompletionIden::State).eq("InProgress"));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_as_with::<_, ExerciseCompletionQuery, _>(&sql, values);
+        let entities =
+            dbm.dbx()
+                .fetch_all(sqlx_query)
+                .await.map_err(Into::<DbError>::into)?;
+        
+        let mut result = Vec::new();
+
+        for ex_comp in entities {
+            result.push(ex_comp.try_into()?);
+        }
+
+        Ok(result)
+    }
 }
