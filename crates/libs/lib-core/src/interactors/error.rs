@@ -69,7 +69,7 @@ pub enum LessonProgressError {
 
 #[derive(Debug, Serialize)]
 pub enum ExerciseError {
-	IncorrectExerciseBodyFormat,
+	IncorrectExerciseBodyFormat { description: String }, 
 	IncorrectHeaderFormat,
 	IncorrectDefinitionFormat,
 	IncorrectProcessStagesFormat,

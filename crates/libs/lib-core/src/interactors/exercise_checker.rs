@@ -46,10 +46,10 @@ impl ExerciseChecker {
 
     fn evaluate_conspects_bodies(answer_conspect: Value, solution_conspect: Value) -> ExerciseResult<Estimate> {
         let answer_conspect: Conspect = serde_json::from_value(answer_conspect)
-            .map_err(|_| ExerciseError::IncorrectExerciseBodyFormat)?;
+            .map_err(|err| ExerciseError::IncorrectExerciseBodyFormat { description: err.to_string() })?;
 
         let solution_conspect: Conspect = serde_json::from_value(solution_conspect)
-            .map_err(|_| ExerciseError::IncorrectExerciseBodyFormat)?;
+            .map_err(|err| ExerciseError::IncorrectExerciseBodyFormat { description: err.to_string() })?;
 
         let connections_estimate = Self::evaluate_connections(&answer_conspect.connections, &solution_conspect.connections)?;
         let nodes_estimate = Self::evaluate_nodes(&answer_conspect.nodes, &solution_conspect.nodes)?;
