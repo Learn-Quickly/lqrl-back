@@ -83,7 +83,7 @@ impl CreatorCourseInteractor {
         let outdated_img_url = course.img_url;
 
         if let Some(img_ulr) = outdated_img_url {
-            remove_file(img_ulr).await?;
+            remove_file(format!("public/{}", img_ulr)).await?;
         }
 
         Ok(new_img_url)
