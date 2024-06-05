@@ -36,28 +36,28 @@ impl ExerciseValidator {
 
     fn validate_node_body(node: &Node) -> ExerciseResult<()> {
         match node.node_type {
-            crate::models::exercise::NodeType::Header => Self::validate_node_header(&node.body),
-            crate::models::exercise::NodeType::Definition => Self::validate_node_definition(&node.body),
-            crate::models::exercise::NodeType::ProcessStages => Self::validate_node_process_stages(&node.body),
+            crate::models::exercise::NodeType::Header => Self::validate_node_header(node.body.clone()),
+            crate::models::exercise::NodeType::Definition => Self::validate_node_definition(node.body.clone()),
+            crate::models::exercise::NodeType::ProcessStages => Self::validate_node_process_stages(node.body.clone()),
         }
     }
 
-    fn validate_node_header(body: &str) -> ExerciseResult<()> {
-        serde_json::from_str::<HeaderBody>(body)
+    fn validate_node_header(body: Value) -> ExerciseResult<()> {
+        serde_json::from_value::<HeaderBody>(body)
             .map_err(|_| ExerciseError::IncorrectHeaderFormat)?;
 
         Ok(())
     }
 
-    fn validate_node_definition(body: &str) -> ExerciseResult<()> {
-        serde_json::from_str::<Definition>(body)
+    fn validate_node_definition(body: Value) -> ExerciseResult<()> {
+        serde_json::from_value::<Definition>(body)
             .map_err(|_| ExerciseError::IncorrectDefinitionFormat)?;
 
         Ok(())
     }
 
-    fn validate_node_process_stages(body: &str) -> ExerciseResult<()> {
-        serde_json::from_str::<ProcessStages>(body)
+    fn validate_node_process_stages(body: Value) -> ExerciseResult<()> {
+        serde_json::from_value::<ProcessStages>(body)
             .map_err(|_| ExerciseError::IncorrectProcessStagesFormat)?;
 
         Ok(())

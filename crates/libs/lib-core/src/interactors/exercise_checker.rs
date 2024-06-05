@@ -114,10 +114,10 @@ impl ExerciseChecker {
             None => return Ok(Estimate { points: 0, max_points: 0 }),
         };
 
-        let stages = serde_json::from_str::<ProcessStages>(&node.body)
+        let stages = serde_json::from_value::<ProcessStages>(node.body.clone())
             .map_err(|_| ExerciseError::IncorrectProcessStagesFormat)?.stages;
 
-        let solution_stages = serde_json::from_str::<ProcessStages>(&solution_node.body)
+        let solution_stages = serde_json::from_value::<ProcessStages>(solution_node.body.clone())
             .map_err(|_| ExerciseError::IncorrectProcessStagesFormat)?.stages;
 
         let mut points = 0;

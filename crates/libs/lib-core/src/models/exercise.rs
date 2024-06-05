@@ -88,7 +88,7 @@ pub struct Node {
     pub x: i64,
     pub y: i64,
     pub node_type: NodeType,
-    pub body: String,
+    pub body: Value,
 }
 
 #[derive(Deserialize)]
