@@ -18,6 +18,11 @@ impl ExerciseValidator {
         let body: Conspect = serde_json::from_value(body)
             .map_err(|err| ExerciseError::IncorrectExerciseBodyFormat { description: err.to_string() })?;
 
+        let number_of_connections = body.connections.len();
+        if body.connections.len() < number_of_connections {
+            return Err(ExerciseError::NotEnoughConnectionsError { number_of_connections }.into() );
+        }
+
         Self::validate_nodes(&body.nodes)
     }
 

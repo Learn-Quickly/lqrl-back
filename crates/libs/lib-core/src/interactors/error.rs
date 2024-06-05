@@ -76,6 +76,7 @@ pub enum ExerciseError {
 	IncorrectExerciseType,
 	IncorrectExerciseDifficulty,
 	NotEnoughNodesError { number_of_nodes: usize },
+	NotEnoughConnectionsError { number_of_connections: usize },
 	CannotUpdateExerciseBodyWithoutType,
 	CannotUpdateExercisetypeWithoutBody,
     IncorrectExerciseOreder { exercise_id: i64, order: i32 },
