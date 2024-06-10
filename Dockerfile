@@ -30,7 +30,7 @@ COPY --from=builder /app/entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 # Expose the port your Axum-web application will listen on
-EXPOSE 8080
+EXPOSE 8888
 
 RUN mkdir -p public/uploads
 
