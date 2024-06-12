@@ -1,5 +1,6 @@
 use derive_more::From;
 use lib_auth::pwd::PwdError;
+use lib_utils::time::DateError;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr};
@@ -22,6 +23,9 @@ pub enum CoreError {
 
 	#[from]
 	UserError(UserError),
+
+	#[from]
+	Date(DateError),
 
 	// File error
 	#[from]
@@ -80,6 +84,9 @@ pub enum ExerciseError {
 	CannotUpdateExerciseBodyWithoutType,
 	CannotUpdateExercisetypeWithoutBody,
     IncorrectExerciseOreder { exercise_id: i64, order: i32 },
+
+	LessonProgressMustBeInProgress,
+	LessonNotStarted,
 
     PreviousExerciseNotCompleted { exercise_id: i64 },
 	PreviousExerciseNotFound { exercise_id: i64 },

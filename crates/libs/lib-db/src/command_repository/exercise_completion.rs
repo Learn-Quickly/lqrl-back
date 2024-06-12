@@ -1,8 +1,10 @@
 use lib_core::{ctx::Ctx, interactors::error::ExerciseError, interfaces::exercise::ExerciseResult, models::exercise_completion::{ExerciseCompletion, ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}};
+use lib_utils::time::from_unix_timestamp;
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
+use time::OffsetDateTime;
 
 use crate::{base::{self, idens::ExerciseCompletionIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
 
@@ -11,7 +13,7 @@ struct ExerciseCompletionData {
     pub exercise_id: i64,
     pub user_id: i64,
     pub number_of_attempts: i32,
-    pub date_started: i64,
+    pub date_started: OffsetDateTime,
 }
 
 #[derive(Fields)]
@@ -121,7 +123,7 @@ impl ExerciseCompletionCommandRepository {
             exercise_id: ex_comp_for_c.exercise_id,
             user_id: ex_comp_for_c.user_id,
             number_of_attempts: ex_comp_for_c.number_of_attempts as i32,
-            date_started: ex_comp_for_c.date_started,
+            date_started: from_unix_timestamp(ex_comp_for_c.date_started)?,
         };
 
         let id = base::create::<Self, ExerciseCompletionData>(ctx, dbm, ex_comp_for_c).await.map_err(Into::<DbError>::into)?;
