@@ -38,7 +38,7 @@ impl StudentLessonInteractor {
         }
 
         let lessons_ordered = lesson_repository.get_course_lessons_ordered(ctx, lesson.course_id).await?;
-        let lesson_progresses = lesson_repository.get_lesson_progresses(ctx, lesson.course_id, ctx.user_id()).await?;
+        let lesson_progresses = lesson_repository.get_lessons_progresses(ctx, lesson.course_id, ctx.user_id()).await?;
 
         let previus_lesson_id = match lessons_ordered.get((lesson.lesson_order - 2) as usize) {
             Some(prev_less) => prev_less.id,
@@ -50,7 +50,7 @@ impl StudentLessonInteractor {
             None => return Err(CoreError::LessonError(crate::interactors::error::LessonError::PreviousLessonNotFound { lesson_id })),
         };
 
-        if prev_lesson_progress.state.eq(&crate::models::lesson_progress::LessonProgressState::InProgress) {
+        if prev_lesson_progress.state.ne(&crate::models::lesson_progress::LessonProgressState::Done) {
             return Err(CoreError::LessonError(crate::interactors::error::LessonError::PreviousLessonNotCompleted { lesson_id }));
         }
 

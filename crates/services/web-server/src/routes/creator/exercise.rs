@@ -98,7 +98,7 @@ async fn api_update_exercise_handler(
 	let command_repository_manager = app_state.command_repository_manager;
 	let exercise_interactor = CreatorExerciseInteractor::new(command_repository_manager);
 
-    exercise_interactor.update_exercise(&ctx, lesson_u).await?;
+    exercise_interactor.update_exercise(&ctx, lesson_u, payload.is_retake_exercise).await?;
 
 	let body = Json(json!({
 		"result": {

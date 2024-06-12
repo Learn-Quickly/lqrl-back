@@ -121,7 +121,7 @@ impl ILessonCommandRepository for LessonCommandRepositoryMock {
         panic!()
     }
     
-    async fn get_lesson_progresses(&self, _: &Ctx, _: i64, _: i64) -> LessonResult<Vec<LessonProgress>> {
+    async fn get_lessons_progresses(&self, _: &Ctx, _: i64, _: i64) -> LessonResult<Vec<LessonProgress>> {
         panic!()
     }
 }

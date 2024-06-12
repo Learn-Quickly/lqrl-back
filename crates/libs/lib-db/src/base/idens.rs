@@ -43,6 +43,7 @@ pub enum LessonIden {
 
 #[derive(Iden)]
 pub enum LessonProgressIden {
+	LessonProgressId,
 	LessonProgress,
 	LessonId,
 	UserId,

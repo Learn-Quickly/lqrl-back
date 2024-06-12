@@ -49,7 +49,7 @@ impl DbRepository for LessonProgressQueryRepository {
 }
 
 impl LessonProgressQueryRepository {
-    pub async fn get_lesson_progresses(
+    pub async fn get_lessons_progresses(
         &self,
         _: &Ctx, 
         course_id: i64,

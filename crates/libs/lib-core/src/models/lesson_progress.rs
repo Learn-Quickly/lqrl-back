@@ -1,3 +1,5 @@
+use derive_more::Display;
+
 use crate::interactors::error::{CoreError, LessonProgressError};
 
 pub struct LessonProgress {
@@ -10,8 +12,9 @@ pub struct LessonProgress {
   pub state: LessonProgressState, 
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Display, Debug, PartialEq, Eq)]
 pub enum LessonProgressState {
+	Pause,
     InProgress,
     Done,
 }

@@ -241,4 +241,17 @@ impl ExerciseCompletionCommandRepository {
 
         Ok(result)
     }
+
+    pub async fn remove_exercise_completions(dbm: &DbManager, _: &Ctx, exercise_id: i64) -> ExerciseResult<()> {
+        let mut query = Query::delete();
+        query
+            .from_table(Self::table_ref())
+            .and_where(Expr::col(ExerciseCompletionIden::ExerciseId).eq(exercise_id));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_with(&sql, values);
+        dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+    
+        Ok(())
+    }
 }
