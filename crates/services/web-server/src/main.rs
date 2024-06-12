@@ -99,7 +99,7 @@ async fn main() -> AppResult<()> {
 		.fallback_service(routes_static::serve_dir())
 		.layer(cors);
 
-	let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
+	let listener = TcpListener::bind("0.0.0.0:8888").await.unwrap();
 	info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
 	axum::serve(listener, routes_all.into_make_service())
 		.await

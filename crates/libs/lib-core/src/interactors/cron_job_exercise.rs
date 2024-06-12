@@ -58,6 +58,7 @@ impl CronJobExercise {
             id: ex_comp.id,
         };
 
+
         exercise_repository.complete_exercise_completion(ctx, ex_comp_for_u).await?;
 
         if self.is_lesson_state_complete(ctx, exercise.lesson_id, ex_comp.user_id).await? {
@@ -66,7 +67,7 @@ impl CronJobExercise {
 
         Ok(1)
     }
-
+    
     async fn is_lesson_state_complete(&self, ctx: &Ctx, lesson_id: i64, user_id: i64) -> ExerciseResult<bool> {
         let exercise_repository = self.repository_manager.get_exercise_repository();
 
