@@ -22,9 +22,18 @@ impl ExerciseChecker {
             });
         }
 
+        if ex_comp.body.is_none() {
+            return Ok(ExerciseEstimate {
+                points: 0.0,
+                max_points: 0.0,
+                difficulty: exercise.difficult.clone(),
+                state: ExerciseCompletionState::Failed,
+            });
+        }
+
         let conspect_estimate = match exercise.exercise_type {
             crate::models::exercise::ExerciseType::Conspect | 
-            crate::models::exercise::ExerciseType::InteractiveConspect => Self::evaluate_conspects_bodies(exercise.answer_body.clone(), ex_comp.body.clone())?,
+            crate::models::exercise::ExerciseType::InteractiveConspect => Self::evaluate_conspects_bodies(exercise.answer_body.clone(), ex_comp.body.clone().unwrap())?,
         };
 
         let max_points: f32 = f32::from(exercise.difficult.clone()) * 100.0;
