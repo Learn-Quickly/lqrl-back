@@ -126,8 +126,8 @@ CREATE TABLE exercise_completion (
   exercise_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
 
-  points_scored float8,
-  max_points float8, 
+  points_scored float4,
+  max_points float4, 
   number_of_attempts integer NOT NULL,
 
   date_started timestamp with time zone NOT NULL,
