@@ -13,7 +13,7 @@ pub struct ExerciseCompletion {
     pub date_started: i64,
     pub date_last_changes: Option<i64>,
     pub state: ExerciseCompletionState,   
-    pub body: Value,
+    pub body: Option<Value>,
 }
 
 #[derive(PartialEq, Display, Clone, Copy)]

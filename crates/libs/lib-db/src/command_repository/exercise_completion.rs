@@ -40,7 +40,7 @@ struct ExerciseCompletionQuery {
     pub date_started: OffsetDateTime,
     pub date_last_changes: Option<OffsetDateTime>,
     pub state: String,   
-    pub body: serde_json::Value,
+    pub body: Option<serde_json::Value>,
 }
 
 impl TryFrom<ExerciseCompletionQuery> for ExerciseCompletion {
