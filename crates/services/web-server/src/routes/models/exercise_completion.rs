@@ -25,8 +25,8 @@ impl From<ExerciseCompletionQuery> for ExerciseCompletionPayload {
             points_scored: value.points_scored,
             max_points: value.max_points,
             number_of_attempts: value.number_of_attempts,
-            date_started: value.date_started,
-            date_last_changes: value.date_last_changes,
+            date_started: value.date_started.unix_timestamp(),
+            date_last_changes: value.date_last_changes.and_then(|date| Ok(date.unix_timestamp())),
             state: value.state,
             body: value.body,
         }
