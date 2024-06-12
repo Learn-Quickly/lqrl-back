@@ -6,7 +6,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use time::OffsetDateTime;
 
-use crate::{base::{self, idens::ExerciseCompletionIden, prep_fields_for_create, prep_fields_for_update, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::DbError}};
+use crate::{base::{idens::ExerciseCompletionIden, prep_fields_for_create, prep_fields_for_update, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::DbError}};
 
 #[derive(Fields)]
 struct ExerciseCompletionData {
@@ -103,15 +103,28 @@ impl ExerciseCompletionCommandRepository {
     }
 
     pub async fn get(
-        ctx: &Ctx,
+        _: &Ctx,
         dbm: &DbManager, 
         id: i64,
     ) -> ExerciseResult<ExerciseCompletion> {
-        let result = base::get::<Self, ExerciseCompletionQuery>(ctx, dbm, id)
-            .await
-            .map_err(Into::<DbError>::into)?;
-
-        Ok(result.try_into()?)
+        let mut query = Query::select();
+        query
+            .from(Self::table_ref())
+            .columns(ExerciseCompletionQuery::field_column_refs())
+            .and_where(Expr::col(ExerciseCompletionIden::ExerciseCompletionId).eq(id));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_as_with::<_, ExerciseCompletionQuery, _>(&sql, values);
+        let entity =
+            dbm.dbx()
+                .fetch_optional(sqlx_query)
+                .await.map_err(Into::<DbError>::into)?
+                .ok_or(DbError::EntityNotFound {
+                    entity: Self::TABLE.to_string(),
+                    id,
+                })?;
+    
+        Ok(entity.try_into()?)
     }
 
     pub async fn create_exercise_completion(
