@@ -3,6 +3,7 @@ use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::FromRow;
+use time::OffsetDateTime;
 
 use crate::{base::{idens::{CommonIden, ExerciseCompletionIden, ExerciseIden}, table_ref::get_exercise_table_ref, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
 
@@ -14,8 +15,8 @@ pub struct ExerciseCompletionQuery {
     pub points_scored: Option<f32>,
     pub max_points: Option<f32>,
     pub number_of_attempts: i32,
-    pub date_started: i64,
-    pub date_last_changes: Option<i64>,
+    pub date_started: OffsetDateTime,
+    pub date_last_changes: Option<OffsetDateTime>,
     pub state: String,   
     pub body: serde_json::Value,
 }
