@@ -8,7 +8,7 @@ pub fn routes(app_state: AppState) -> Router {
 	Router::new()
 		.route("/start_exercise", post(api_start_exercise_handler))
 		.route("/save_changes", post(api_save_changes_handler))
-		.route("/complete_attempt", put(api_complete_attempt_handler))
+		.route("/complete_attempt", post(api_complete_attempt_handler))
 		.with_state(app_state)
 }
 
@@ -43,7 +43,7 @@ async fn api_start_exercise_handler(
 }
 
 #[utoipa::path(
-	put,
+	post,
 	path = "/api/course/lesson/exercise/save_changes",
 	request_body = ExerciseCompletionForSaveChanges,
 	responses(
@@ -75,7 +75,7 @@ async fn api_save_changes_handler(
 }
 
 #[utoipa::path(
-	put,
+	post,
 	path = "/api/course/lesson/exercise/complete_attempt",
 	request_body = ExerciseCompletionId,
 	responses(
