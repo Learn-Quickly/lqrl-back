@@ -6,7 +6,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use time::OffsetDateTime;
 
-use crate::{base::{self, idens::ExerciseCompletionIden, prep_fields_for_create, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::DbError}};
+use crate::{base::{self, idens::ExerciseCompletionIden, prep_fields_for_create, prep_fields_for_update, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::DbError}};
 
 #[derive(Fields)]
 struct ExerciseCompletionData {
@@ -142,7 +142,7 @@ impl ExerciseCompletionCommandRepository {
     
         let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
         let sqlx_query = sqlx::query_as_with::<_, (i64,), _>(&sql, values);
-        
+
         let (id,) = dbm.dbx().fetch_one(sqlx_query).await.map_err(Into::<DbError>::into)?;
 
         Ok(id)
@@ -153,14 +153,32 @@ impl ExerciseCompletionCommandRepository {
         ctx: &Ctx, 
         ex_comp_for_u: ExerciseCompletionForUpdate,
     ) -> ExerciseResult<()> {
-        let ex_comp_for_u = ExerciseCompletionForSaveChanges {
+        let ex_comp_for_u_req = ExerciseCompletionForSaveChanges {
             date_last_changes: ex_comp_for_u.date_last_changes,
             body: Value::Json(Some(Box::new(ex_comp_for_u.body))),
         };
+	    let mut fields = ex_comp_for_u_req.not_none_fields();
+	    prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
 
-        base::create::<Self, ExerciseCompletionForSaveChanges>(ctx, dbm, ex_comp_for_u).await.map_err(Into::<DbError>::into)?;
-        
-        Ok(())
+	    let fields = fields.for_sea_update();
+	    let mut query = Query::update();
+	    query
+		    .table(Self::table_ref())
+		    .values(fields)
+		    .and_where(Expr::col(ExerciseCompletionIden::ExerciseCompletionId).eq(ex_comp_for_u.id));
+
+	    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+	    let sqlx_query = sqlx::query_with(&sql, values);
+	    let count = dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+
+	    if count == 0 {
+		    Err(DbError::EntityNotFound {
+			    entity: Self::TABLE.to_string(),
+			    id: ex_comp_for_u.id,
+		    }.into())
+	    } else {
+		    Ok(())
+	    }
     }
 
     pub async fn complete_exercise(
@@ -168,15 +186,34 @@ impl ExerciseCompletionCommandRepository {
         ctx: &Ctx,
         ex_comp_for_u: ExerciseCompletionForCompleteCommand,
     ) -> ExerciseResult<()> {
-        let ex_comp_for_u = ExerciseCompletionForComplete {
+        let ex_comp_for_u_req = ExerciseCompletionForComplete {
             points_scored: ex_comp_for_u.points_scored,
             max_points: ex_comp_for_u.max_points,
             state: ex_comp_for_u.state.to_string(),
         };
 
-        base::create::<Self, ExerciseCompletionForComplete>(ctx, dbm, ex_comp_for_u).await.map_err(Into::<DbError>::into)?;
-        
-        Ok(())
+	    let mut fields = ex_comp_for_u_req.not_none_fields();
+	    prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+
+	    let fields = fields.for_sea_update();
+	    let mut query = Query::update();
+	    query
+		    .table(Self::table_ref())
+		    .values(fields)
+		    .and_where(Expr::col(ExerciseCompletionIden::ExerciseCompletionId).eq(ex_comp_for_u.id));
+
+	    let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+	    let sqlx_query = sqlx::query_with(&sql, values);
+	    let count = dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+
+	    if count == 0 {
+		    Err(DbError::EntityNotFound {
+			    entity: Self::TABLE.to_string(),
+			    id: ex_comp_for_u.id,
+		    }.into())
+	    } else {
+		    Ok(())
+	    }        
     }
 
     pub async fn get_uncompleted_exercises(

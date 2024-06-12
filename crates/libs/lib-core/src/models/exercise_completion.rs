@@ -44,11 +44,13 @@ pub struct ExerciseCompletionForCreate {
 }
 
 pub struct ExerciseCompletionForUpdate {
+    pub id: i64,
     pub body: Value,
     pub date_last_changes: i64,
 }
 
 pub struct ExerciseCompletionForCompleteCommand {
+    pub id: i64,
     pub points_scored: f32,
     pub max_points: f32,
     pub state: ExerciseCompletionState,
