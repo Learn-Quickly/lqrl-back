@@ -6,7 +6,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use time::OffsetDateTime;
 
-use crate::{base::{self, idens::ExerciseCompletionIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+use crate::{base::{self, idens::ExerciseCompletionIden, prep_fields_for_create, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::DbError}};
 
 #[derive(Fields)]
 struct ExerciseCompletionData {
@@ -125,8 +125,25 @@ impl ExerciseCompletionCommandRepository {
             number_of_attempts: ex_comp_for_c.number_of_attempts as i32,
             date_started: from_unix_timestamp(ex_comp_for_c.date_started)?,
         };
+        let user_id = ctx.user_id();
 
-        let id = base::create::<Self, ExerciseCompletionData>(ctx, dbm, ex_comp_for_c).await.map_err(Into::<DbError>::into)?;
+        let mut fields = ex_comp_for_c.not_none_fields();
+        prep_fields_for_create::<Self>(&mut fields, user_id);
+    
+        let (columns, sea_values) = fields.for_sea_insert();
+        let mut query = Query::insert();
+        query
+            .into_table(Self::table_ref())
+            .columns(columns)
+            .values(sea_values)
+			.map_err(DbxError::SeaQuery)
+            .map_err(Into::<DbError>::into)?
+            .returning(Query::returning().columns([ExerciseCompletionIden::ExerciseCompletionId]));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_as_with::<_, (i64,), _>(&sql, values);
+        
+        let (id,) = dbm.dbx().fetch_one(sqlx_query).await.map_err(Into::<DbError>::into)?;
 
         Ok(id)
     }
