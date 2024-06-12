@@ -55,7 +55,9 @@ impl CronJobExercise {
             points_scored: exercise_estimate.points,
             max_points: exercise_estimate.max_points,
             state: exercise_estimate.state,
+            id: ex_comp.id,
         };
+
 
         exercise_repository.complete_exercise_completion(ctx, ex_comp_for_u).await?;
 
