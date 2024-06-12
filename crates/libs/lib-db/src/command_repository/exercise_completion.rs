@@ -18,7 +18,7 @@ struct ExerciseCompletionData {
 
 #[derive(Fields)]
 struct ExerciseCompletionForSaveChanges {
-    pub date_last_changes: i64,
+    pub date_last_changes: OffsetDateTime,
     pub body: Value,
 }
 
@@ -167,7 +167,7 @@ impl ExerciseCompletionCommandRepository {
         ex_comp_for_u: ExerciseCompletionForUpdate,
     ) -> ExerciseResult<()> {
         let ex_comp_for_u_req = ExerciseCompletionForSaveChanges {
-            date_last_changes: ex_comp_for_u.date_last_changes,
+            date_last_changes: from_unix_timestamp(ex_comp_for_u.date_last_changes)?,
             body: Value::Json(Some(Box::new(ex_comp_for_u.body))),
         };
 	    let mut fields = ex_comp_for_u_req.not_none_fields();
