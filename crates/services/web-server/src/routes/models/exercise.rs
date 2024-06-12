@@ -62,6 +62,7 @@ pub struct ExerciseForUpdatePayload {
     pub answer_body: Option<Value>,
     pub difficult: Option<String>,
     pub time_to_complete: Option<i64>,  
+    pub is_retake_exercise: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

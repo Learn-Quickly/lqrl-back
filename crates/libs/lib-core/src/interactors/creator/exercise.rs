@@ -61,7 +61,8 @@ impl CreatorExerciseInteractor {
     pub async fn update_exercise(
         &self, 
         ctx: &Ctx,
-        exercise_for_u: ExerciseForUpdate
+        exercise_for_u: ExerciseForUpdate,
+        is_retake_exercise: bool,
     ) -> ExerciseResult<()> {
         self.permission_manager
             .check_exercise_creator_permission(ctx, exercise_for_u.id)
@@ -69,11 +70,30 @@ impl CreatorExerciseInteractor {
 
         self.validate_exercise(exercise_for_u.exercise_type.clone(), exercise_for_u.answer_body.clone())?;
         self.validate_exercise(exercise_for_u.exercise_type.clone(), exercise_for_u.exercise_body.clone())?;
-        
 
         let exercise_repository = self.repository_manager.get_exercise_repository();
 
-        exercise_repository.update(ctx, exercise_for_u).await
+        if is_retake_exercise {
+            self.change_lessons_state(ctx, exercise_for_u.id).await?;
+            exercise_repository.remove_exercise_completions(ctx, exercise_for_u.id).await?;
+        }
+
+        exercise_repository.update(ctx, exercise_for_u).await?;
+
+
+        Ok(())
+    }
+
+    async fn change_lessons_state(&self, ctx: &Ctx, exercise_id: i64) -> ExerciseResult<()> {
+        let exercise_repository = self.repository_manager.get_exercise_repository();
+        let exercise = exercise_repository.get_exercise(ctx, exercise_id).await?;
+
+        let lesson_repository = self.repository_manager.get_lesson_repository();
+        let lesson = lesson_repository.get_lesson(ctx, exercise.lesson_id).await?;
+
+        lesson_repository.change_lesson_progress_states_for_update_exercise(ctx, lesson.id, lesson.lesson_order).await?;
+
+        Ok(())
     }
 
     fn validate_exercise(

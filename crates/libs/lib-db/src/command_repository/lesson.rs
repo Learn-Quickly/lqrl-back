@@ -4,14 +4,14 @@ use lib_core::{
     interfaces::lesson::{ILessonCommandRepository, LessonResult}, 
     models::{lesson::{
         Lesson, LessonForChangeOreder, LessonForCreateCommand, LessonForUpdate
-    }, lesson_progress::LessonProgress}
+    }, lesson_progress::{LessonProgress, LessonProgressState}}
 };
 use modql::field::{Fields, HasFields};
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, FromRow};
 
-use crate::{base::{self, idens::LessonIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+use crate::{base::{self, idens::{CommonIden, LessonIden, LessonProgressIden}, prep_fields_for_update, table_ref::get_lesson_progress_table_ref, DbRepository}, store::{db_manager::DbManager, error::DbError}};
 
 use super::lesson_progress::LessonProgressCommandRepository;
 
@@ -40,6 +40,11 @@ struct LessonForUpdateOrder {
 struct LessonForUpdateData {
     pub title: String,
     pub description: String,
+}
+
+#[derive(Fields)]
+pub struct LessonForUpdateState {
+    pub state: String,
 }
 
 pub trait LessonBy: HasFields + for<'r> FromRow<'r, PgRow> + Unpin + Send {}
@@ -118,13 +123,13 @@ impl ILessonCommandRepository for LessonCommandRepository {
         Ok(())
     }
 
-    async fn get_lesson_progresses(
+    async fn get_lessons_progresses(
         &self,
         ctx: &Ctx,
         course_id: i64, 
         user_id: i64
     ) -> LessonResult<Vec<LessonProgress>> {
-        let lesson_progresses_data = LessonProgressCommandRepository::get_lesson_progresses(&self.dbm, &ctx, course_id, user_id)
+        let lesson_progresses_data = LessonProgressCommandRepository::get_lessons_progresses(&self.dbm, &ctx, course_id, user_id)
             .await?;
 
         let mut result = Vec::new();
@@ -196,6 +201,102 @@ impl ILessonCommandRepository for LessonCommandRepository {
 
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
+        Ok(())
+    }
+
+    async fn change_lesson_progress_states_for_update_exercise(
+        &self, 
+        ctx: &Ctx, 
+        lesson_id: i64, 
+        order: i32
+    ) -> LessonResult<()> {
+		let dbm = self.dbm.new_with_txn()?;
+		dbm.dbx().begin_txn().await.map_err(Into::<DbError>::into)?;
+
+        let pause_state = LessonForUpdateState {
+            state: LessonProgressState::Pause.to_string(),
+        };
+        let mut fields = pause_state.not_none_fields();
+        prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+    
+        let lesson_progress_table_ref = get_lesson_progress_table_ref();
+        let fields = fields.for_sea_update();
+        let mut query = Query::update();
+        query
+        .table(lesson_progress_table_ref.clone()) 
+        .values(fields)
+        .and_where(
+            Expr::col(LessonProgressIden::LessonId)
+                .in_subquery(Query::select()
+                    .column(CommonIden::Id)
+                    .from(LessonIden::Lesson)
+                    .and_where(Expr::col(LessonIden::LessonOrder).gt(order))
+                    .and_where(Expr::col(CommonIden::Id).eq(lesson_id))
+                    .to_owned())
+        );
+
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_with(&sql, values);
+        dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+
+        let in_progress_state = LessonForUpdateState {
+            state: LessonProgressState::InProgress.to_string(),
+        };
+        let mut fields = in_progress_state.not_none_fields();
+        prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+    
+        let fields = fields.for_sea_update();
+        let mut query = Query::update();
+        query
+        .table(lesson_progress_table_ref) 
+        .values(fields)
+        .and_where(
+            Expr::col(LessonProgressIden::LessonId)
+                .in_subquery(Query::select()
+                    .column(CommonIden::Id)
+                    .from(LessonIden::Lesson)
+                    .and_where(Expr::col(LessonIden::LessonOrder).gt(order))
+                    .and_where(Expr::col(CommonIden::Id).eq(lesson_id))
+                    .to_owned())
+        );
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_with(&sql, values);
+        dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+
+		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
+
+        Ok(())
+    }
+
+    async fn update_lesson_progress_state(
+        &self,
+        _: &Ctx, 
+        lesson_for_u: LessonProgressState, 
+        lesson_id: i64, 
+        user_id: i64,
+    ) -> LessonResult<()> {
+        let lesson_for_u_s = LessonForUpdateState {
+            state: lesson_for_u.to_string(),
+        };
+
+        let lesson_progress_table_ref = get_lesson_progress_table_ref();
+
+        let fields = lesson_for_u_s.not_none_fields();
+    
+        let fields = fields.for_sea_update();
+        let mut query = Query::update();
+        query
+            .table(lesson_progress_table_ref)
+            .values(fields)
+            .and_where(Expr::col(LessonProgressIden::UserId).eq(user_id))
+            .and_where(Expr::col(LessonProgressIden::LessonId).eq(lesson_id));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_with(&sql, values);
+        self.dbm.dbx().execute(sqlx_query).await.map_err(Into::<DbError>::into)?;
+    
         Ok(())
     }
 }

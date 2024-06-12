@@ -27,4 +27,9 @@ pub trait IExerciseCommandRepository {
     async fn complete_exercise_completion(&self, ctx: &Ctx, ex_comp_for_u: ExerciseCompletionForCompleteCommand) -> ExerciseResult<()>;
 
     async fn get_uncompleted_exercises(&self, ctx: &Ctx) -> ExerciseResult<Vec<ExerciseCompletion>>;
+
+    async fn get_number_of_lesson_completed_exercises(&self, ctx: &Ctx, lesson_id: i64, user_id: i64) -> ExerciseResult<i64>;
+
+    async fn remove_exercise_completions(&self, ctx: &Ctx, exercise_id: i64) -> ExerciseResult<()>;
+
 }

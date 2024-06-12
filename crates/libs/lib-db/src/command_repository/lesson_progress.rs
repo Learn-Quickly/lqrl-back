@@ -6,7 +6,7 @@ use sea_query_binder::SqlxBinder;
 use sqlx::FromRow;
 use time::OffsetDateTime;
 
-use crate::{base::{self, idens::{CommonIden, LessonIden, LessonProgressIden}, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
+use crate::{base::{self, idens::{CommonIden, LessonIden, LessonProgressIden}, prep_fields_for_create, DbRepository}, store::{db_manager::DbManager, dbx::error::DbxError, error::{DbError, DbResult}}};
 
 #[derive(Clone, Fields, FromRow, Debug)]
 pub struct LessonProgressData {
@@ -60,15 +60,29 @@ impl LessonProgressCommandRepository {
             lesson_id,
             date_started,
         };
+        let user_id = ctx.user_id();
 
-        base::create::<Self, LessonProgreesForInsert>(ctx, dbm, lesson_progress_f_i)
-            .await
-            .map_err(Into::<DbError>::into)?;
+        let mut fields = lesson_progress_f_i.not_none_fields();
+        prep_fields_for_create::<Self>(&mut fields, user_id);
+    
+        let (columns, sea_values) = fields.for_sea_insert();
+        let mut query = Query::insert();
+        query
+            .into_table(Self::table_ref())
+            .columns(columns)
+            .values(sea_values)
+			.map_err(DbxError::SeaQuery)
+            .map_err(Into::<DbError>::into)?
+            .returning(Query::returning().columns([LessonProgressIden::LessonProgressId]));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_as_with::<_, (i64,), _>(&sql, values);
+        let (_,) = dbm.dbx().fetch_one(sqlx_query).await?;
 
         Ok(())
     }
 
-    pub async fn get_lesson_progresses(
+    pub async fn get_lessons_progresses(
         dbm: &DbManager,
         _: &Ctx, 
         course_id: i64,

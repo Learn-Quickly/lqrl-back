@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::{post, put}, Json, Router};
+use axum::{extract::State, routing::post, Json, Router};
 use lib_core::interactors::student::exercise::StudentExerciseInteractor;
 use serde_json::{json, Value};
 

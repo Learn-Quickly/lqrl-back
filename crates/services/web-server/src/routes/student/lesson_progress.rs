@@ -31,7 +31,7 @@ async fn api_get_lesson_progresses_handler(
 
 	let lesson_progress_query_repository = app_state.query_repository_manager.get_lesson_progress_repository();
 	let lesson_progresses_data = lesson_progress_query_repository
-		.get_lesson_progresses(&ctx, paylod.course_id, user_id)
+		.get_lessons_progresses(&ctx, paylod.course_id, user_id)
 		.await?
 		.iter()
 		.map(|lesson_progrerss_data| lesson_progrerss_data.into())
