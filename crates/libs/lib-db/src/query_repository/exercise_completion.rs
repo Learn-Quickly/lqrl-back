@@ -75,7 +75,7 @@ impl ExerciseCompletionQueryRepository {
             .from(Self::table_ref())
             .columns(ExerciseCompletionQuery::field_column_refs())
             .inner_join(get_exercise_table_ref(), 
-                Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseCompletionId))
+                Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseId))
                 .equals((ExerciseIden::Exercise, CommonIden::Id))
             )
             .and_where(Expr::col(ExerciseCompletionIden::UserId).eq(user_id))
