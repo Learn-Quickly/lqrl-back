@@ -19,7 +19,7 @@ impl ExerciseValidator {
             .map_err(|err| ExerciseError::IncorrectExerciseBodyFormat { description: err.to_string() })?;
 
         let number_of_connections = body.connections.len();
-        if body.connections.len() < number_of_connections {
+        if number_of_connections < 3 {
             return Err(ExerciseError::NotEnoughConnectionsError { number_of_connections }.into() );
         }
 
