@@ -24,3 +24,7 @@ pub fn get_lesson_progress_table_ref() -> TableRef {
 pub fn get_exercise_table_ref() -> TableRef {
 	TableRef::Table(SIden("exercise").into_iden())
 }
+
+pub fn get_exercise_completion_table_ref() -> TableRef {
+	TableRef::Table(SIden("exercise_completion").into_iden())
+}

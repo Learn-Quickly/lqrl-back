@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use lib_core::{ctx::Ctx, interactors::error::CoreError, interfaces::exercise::{ExerciseResult, IExerciseCommandRepository}, models::{exercise::{ExerciseForChangeOrder, ExerciseForCreateCommand}, exercise_completion::{ExerciseCompletion, ExerciseCompletionForCompleteCommand, ExerciseCompletionForCreate, ExerciseCompletionForUpdate}}};
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, PostgresQueryBuilder, Query, Value};
+use sea_query::{Alias, Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::SqlxBinder;
 use sqlx::{postgres::PgRow, prelude::FromRow};
 
-use crate::{base::{self, idens::ExerciseIden, DbRepository}, store::{db_manager::DbManager, error::DbError}};
+use crate::{base::{self, idens::{CommonIden, ExerciseCompletionIden, ExerciseIden}, table_ref::get_exercise_completion_table_ref, DbRepository}, store::{db_manager::DbManager, error::DbError}};
 
 use super::exercise_completion::ExerciseCompletionCommandRepository;
 
@@ -263,7 +263,30 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
         ExerciseCompletionCommandRepository::remove_exercise_completions(&self.dbm, ctx, exercise_id).await
     }
 
-    async fn get_number_of_lesson_completed_exercises(&self, ctx: &Ctx, lesson_id: i64, user_id: i64) -> ExerciseResult<i64> {
-        Ok(2)
+    async fn get_number_of_lesson_completed_exercises(&self, _: &Ctx, lesson_id: i64, user_id: i64) -> ExerciseResult<i64> {
+    	let mut subquery = Query::select();
+    	subquery.from(Self::table_ref())
+        	.expr(Expr::col((ExerciseIden::Exercise, CommonIden::Id)))
+        	.inner_join(
+            	get_exercise_completion_table_ref(), 
+            	Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseCompletionId))
+            	.equals((ExerciseIden::Exercise, CommonIden::Id))
+        	)
+        	.and_where(Expr::col((ExerciseIden::Exercise, ExerciseIden::LessonId)).eq(lesson_id))
+        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::UserId)).eq(user_id))
+        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::State)).eq("Succeeded"))
+        	.distinct();
+
+    	let mut query = Query::select();
+    	query.expr(Expr::col(Alias::new("subquery")).count())
+        	.from_subquery(subquery, Alias::new("subquery"));
+
+    	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+    	let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
+    	let entities = self.dbm.dbx().fetch_one_scalar(sqlx_query).await
+			    .map_err(Into::<DbError>::into)?;
+
+    	Ok(entities)
     }
 }
