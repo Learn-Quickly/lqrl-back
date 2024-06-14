@@ -64,6 +64,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 		user_exercise::api_get_exercise_handler,
 		user_exercise::api_get_exercise_completions_handler,
 		user_exercise::api_get_exercises_completions_handler,
+		user_exercise::api_get_number_of_lesson_completed_exercises_handler,
     ),
     components(
 		schemas(
