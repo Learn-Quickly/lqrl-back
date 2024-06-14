@@ -1,11 +1,11 @@
 use lib_core::ctx::Ctx;
 use modql::field::{Fields, HasFields};
-use sea_query::{Expr, PostgresQueryBuilder, Query};
+use sea_query::{Alias, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde_json::Value;
 use sqlx::FromRow;
 
-use crate::{base::{self, idens::ExerciseIden, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
+use crate::{base::{self, idens::{CommonIden, ExerciseCompletionIden, ExerciseIden}, table_ref::get_exercise_completion_table_ref, DbRepository}, store::{db_manager::DbManager, error::{DbError, DbResult}}};
 
 #[derive(Clone, Fields, FromRow, Debug)]
 pub struct ExerciseQuery {
@@ -72,4 +72,32 @@ impl ExerciseQueryRepository {
             .await
             .map_err(Into::<DbError>::into)
     }
+
+    pub async fn get_number_of_lesson_completed_exercises(&self, _: &Ctx, lesson_id: i64, user_id: i64) -> DbResult<i64> {
+    	let mut subquery = Query::select();
+    	subquery.from(Self::table_ref())
+        	.distinct_on([CommonIden::Id])
+        	.column(CommonIden::Id)
+        	.inner_join(
+            	get_exercise_completion_table_ref(), 
+            	Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseId))
+            	.equals((ExerciseIden::Exercise, CommonIden::Id))
+        	)
+        	.and_where(Expr::col((ExerciseIden::Exercise, ExerciseIden::LessonId)).eq(lesson_id))
+        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::UserId)).eq(user_id))
+        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::State)).eq("Succeeded"));
+
+    	let mut query = Query::select();
+    	query.expr(Expr::col(Alias::new("subquery")).count())
+        	.from_subquery(subquery, Alias::new("subquery"));
+
+    	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+    	let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
+    	let entities = self.dbm.dbx().fetch_one_scalar(sqlx_query).await
+			    .map_err(Into::<DbError>::into)?;
+
+    	Ok(entities)
+    }
+
 }

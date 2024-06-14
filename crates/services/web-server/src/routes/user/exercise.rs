@@ -9,6 +9,7 @@ pub fn routes(app_state: AppState) -> Router {
 		.route("/get_exercise/:i64", get(api_get_exercise_handler))
 		.route("/get_exercise_completions/:i64", get(api_get_exercise_completions_handler))
 		.route("/get_exercises_completions/:i64", get(api_get_exercises_completions_handler))
+		.route("/get_number_of_lesson_completed_exercises/:i64", get(api_get_number_of_lesson_completed_exercises_handler))
 		.with_state(app_state)
 }
 
@@ -138,4 +139,37 @@ async fn api_get_exercises_completions_handler(
         .map(|exercise| exercise.clone().into()).collect();
 
 	Ok(Json(exercises_completions))
+}
+
+#[utoipa::path(
+	get,
+	path = "/api/course/lesson/exercise/get_number_of_lesson_completed_exercises/{lesson_id}",
+	params(
+		("lesson_id", description = "ID of the lesson")
+	),
+	responses(
+		(status = 200, body=i64),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_get_number_of_lesson_completed_exercises_handler(
+	ctx: CtxW,
+	State(app_state): State<AppState>,
+	Path(lesson_id): Path<i64>,
+) -> AppResult<Json<i64>> {
+	let ctx = ctx.0;
+    let user_id = ctx.user_id();
+
+	let exercise_query_repository = app_state
+        .query_repository_manager
+        .get_exercise_repository();
+
+	let exercises = exercise_query_repository
+        .get_number_of_lesson_completed_exercises(&ctx, lesson_id, user_id)
+        .await?;
+
+	
+	Ok(Json(exercises))
 }

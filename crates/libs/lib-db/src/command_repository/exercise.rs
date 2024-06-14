@@ -266,16 +266,16 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
     async fn get_number_of_lesson_completed_exercises(&self, _: &Ctx, lesson_id: i64, user_id: i64) -> ExerciseResult<i64> {
     	let mut subquery = Query::select();
     	subquery.from(Self::table_ref())
-        	.expr(Expr::col((ExerciseIden::Exercise, CommonIden::Id)))
+        	.distinct_on([CommonIden::Id])
+        	.column(CommonIden::Id)
         	.inner_join(
             	get_exercise_completion_table_ref(), 
-            	Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseCompletionId))
+            	Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseId))
             	.equals((ExerciseIden::Exercise, CommonIden::Id))
         	)
         	.and_where(Expr::col((ExerciseIden::Exercise, ExerciseIden::LessonId)).eq(lesson_id))
         	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::UserId)).eq(user_id))
-        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::State)).eq("Succeeded"))
-        	.distinct();
+        	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::State)).eq("Succeeded"));
 
     	let mut query = Query::select();
     	query.expr(Expr::col(Alias::new("subquery")).count())
