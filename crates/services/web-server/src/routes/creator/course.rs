@@ -5,7 +5,7 @@ use lib_utils::time::now_utc_sec;
 use serde_json::{json, Value};
 use tracing::info;
 
-use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::{course::{CourseCreateDraftPayload, CourseFilterPayload, CourseId, CoursePayload, CourseUpdatePayload, CoursesPayload, CreatedCourseDraft}, user::{GetAttendatsPayload, UserPayload, UsersPayload}}};
+use crate::{app_state::AppState, error::AppResult, middleware::mw_auth::CtxW, routes::models::{course::{CourseCreateDraftPayload, CourseFilterPayload, CourseId, CoursePayload, CoursePointStatisticsPayload, CourseUpdatePayload, CoursesPayload, CreatedCourseDraft}, user::{GetAttendatsPayload, UserPayload, UsersPayload}}};
 
 pub fn routes(app_state: AppState) -> Router {
 	Router::new()
@@ -16,6 +16,7 @@ pub fn routes(app_state: AppState) -> Router {
 		.route("/archive_course", put(api_archive_course_handler))
 		.route("/get_created_courses", get(api_get_created_courses_handler))
 		.route("/get_attendants", get(api_get_attendants))
+		.route("/get_point_statistics/:i64", get(api_get_point_statistics_handler))
 		.with_state(app_state)
 }
 
@@ -327,4 +328,32 @@ async fn api_get_attendants(
 	let result = UsersPayload { users: users_result, count  };
 
 	Ok(Json(result))
+}
+
+
+#[utoipa::path(
+	get,
+	path = "/api/course/get_point_statistics/{course_id}",
+	params(
+		("course_id", description = "ID of the course")
+	),
+	responses(
+		(status = 200, body = CoursePointStatisticsPayload),
+	),
+	security(
+		("bearerAuth" = [])
+	)
+)]
+async fn api_get_point_statistics_handler(
+	ctx: CtxW,
+	State(app_state): State<AppState>,
+	Path(course_id): Path<i64>,
+) -> AppResult<Json<CoursePointStatisticsPayload>> {
+	let ctx = ctx.0;
+
+	let exercise_repository = app_state.query_repository_manager.get_exercise_repository();
+
+	let course_point_statistics = exercise_repository.get_course_point_statistics(&ctx, course_id).await?;
+
+	Ok(Json(course_point_statistics.into()))
 }

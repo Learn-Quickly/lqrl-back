@@ -34,6 +34,7 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 		creator_course::api_archive_course_handler,
 		creator_course::api_get_created_courses_handler,
 		creator_course::api_get_attendants,
+		creator_course::api_get_point_statistics_handler,
 
 		// Course student
 		student_course::api_register_for_course_handler,
@@ -87,6 +88,8 @@ use crate::routes::creator::{course as creator_course, lesson as creator_lesson,
 			models::course::CourseId,
 			models::course::CourseFilterPayload,
 			models::course::CoursesPayload,
+			models::course::CoursePointStatisticsPayload,
+			models::course::UserPointsPayload,
 
 			// Lesson
 			models::lesson::LessonCreatedPayload,

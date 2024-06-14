@@ -1,5 +1,5 @@
 use lib_core::interactors::error::{CoreError, CourseError};
-use lib_db::query_repository::course::CourseQuery;
+use lib_db::query_repository::{course::CourseQuery, exercise::{CoursePointStatistics, UserPoints}};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use utoipa::{IntoParams, ToSchema};
@@ -103,4 +103,36 @@ pub struct CourseFilterPayload {
 	pub filters: Option<String>,
 	#[param(example = "{\"limit\": 5, \"offset\": 2, \"order_bys\": \"!price\"}")]
 	pub list_options: Option<String>,
+}
+
+#[derive(ToSchema, Serialize)]
+pub struct CoursePointStatisticsPayload {
+	pub max_points: i64,
+    pub users_points: Vec<UserPointsPayload>,
+}
+
+#[derive(ToSchema, Serialize)]
+pub struct UserPointsPayload {
+    pub user_id: i64,
+    pub username: String,
+    pub points: f32,
+}
+
+impl From<&UserPoints> for UserPointsPayload {
+	fn from(value: &UserPoints) -> Self {
+		Self {
+    		user_id: value.user_id,
+    		username: value.username.clone(),
+    		points: value.points,
+		}
+	}
+}
+
+impl From<CoursePointStatistics> for CoursePointStatisticsPayload {
+	fn from(value: CoursePointStatistics) -> Self {
+		Self {
+    		max_points: value.max_points,
+    		users_points: value.users_points.iter().map(|user_points| user_points.into()).collect(),
+		}
+	}
 }
