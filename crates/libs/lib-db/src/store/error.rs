@@ -43,6 +43,7 @@ pub enum DbError {
 		entity: String,
 		field: String,
 	},
+	ParseFieldError,
 
 	// -- DbManager
 	CantCreateDbManagerProvider(String),
