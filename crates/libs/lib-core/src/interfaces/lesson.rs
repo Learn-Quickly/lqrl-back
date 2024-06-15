@@ -15,7 +15,7 @@ pub type LessonResult<T> = core::result::Result<T, CoreError>;
 pub trait ILessonCommandRepository {
     async fn get_lesson(&self, ctx: &Ctx, lesson_id: i64) -> LessonResult<Lesson>;
 
-    async fn change_lesson_progress_states_for_update_exercise(&self, ctx: &Ctx, lesson_id: i64, order: i32) -> LessonResult<()>;
+    async fn change_lesson_progress_states_for_update_exercise(&self, ctx: &Ctx, course_id: i64, order: i32) -> LessonResult<()>;
 
     async fn get_course_lessons_ordered(&self, ctx: &Ctx, course_id: i64) -> LessonResult<Vec<LessonForChangeOreder>>;
 

@@ -91,7 +91,7 @@ impl CreatorExerciseInteractor {
         let lesson_repository = self.repository_manager.get_lesson_repository();
         let lesson = lesson_repository.get_lesson(ctx, exercise.lesson_id).await?;
 
-        lesson_repository.change_lesson_progress_states_for_update_exercise(ctx, lesson.id, lesson.lesson_order).await?;
+        lesson_repository.change_lesson_progress_states_for_update_exercise(ctx, lesson.course_id, lesson.lesson_order).await?;
 
         Ok(())
     }
