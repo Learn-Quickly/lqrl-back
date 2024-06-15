@@ -64,8 +64,13 @@ struct ExerciseForUpdate {
 }
 
 #[derive(Fields)]
-struct ExerciseForUpdateBody {
-    pub body: Value,
+struct ExerciseForUpdateAnswerBody {
+    pub answer_body: Value,
+}
+
+#[derive(Fields)]
+struct ExerciseForUpdateExerciseBody {
+    pub exercise_body: Value,
 }
 
 #[derive(Fields)]
@@ -93,13 +98,27 @@ impl ExerciseCommandRepository {
 		}
 	}
 
-    async fn update_body(&self, ctx: &Ctx, body: Option<serde_json::Value>, exercise_id: i64) -> ExerciseResult<()> {
+    async fn update_exercise_body(&self, ctx: &Ctx, body: Option<serde_json::Value>, exercise_id: i64) -> ExerciseResult<()> {
         if let Some(body) = body {
-            let exercise_for_u_b = ExerciseForUpdateBody { 
-                body: Value::Json(Some(Box::new(body))),
+            let exercise_for_u_b = ExerciseForUpdateExerciseBody { 
+                exercise_body: Value::Json(Some(Box::new(body))),
             };
 
-		    base::update::<Self, ExerciseForUpdateBody>(&ctx, &self.dbm, exercise_id, exercise_for_u_b)
+		    base::update::<Self, ExerciseForUpdateExerciseBody>(&ctx, &self.dbm, exercise_id, exercise_for_u_b)
+			    .await
+			    .map_err(Into::<DbError>::into)?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_answer_body(&self, ctx: &Ctx, body: Option<serde_json::Value>, exercise_id: i64) -> ExerciseResult<()> {
+        if let Some(body) = body {
+            let exercise_for_u_b = ExerciseForUpdateAnswerBody { 
+                answer_body: Value::Json(Some(Box::new(body))),
+            };
+
+		    base::update::<Self, ExerciseForUpdateAnswerBody>(&ctx, &self.dbm, exercise_id, exercise_for_u_b)
 			    .await
 			    .map_err(Into::<DbError>::into)?;
         }
@@ -187,8 +206,8 @@ impl IExerciseCommandRepository for ExerciseCommandRepository {
 			.await
 			.map_err(Into::<DbError>::into)?;
 
-        self.update_body(ctx, exercise_for_u.answer_body, exercise_for_u.id).await?;
-        self.update_body(ctx, exercise_for_u.exercise_body, exercise_for_u.id).await?;
+        self.update_answer_body(ctx, exercise_for_u.answer_body, exercise_for_u.id).await?;
+        self.update_exercise_body(ctx, exercise_for_u.exercise_body, exercise_for_u.id).await?;
 
 		dbm.dbx().commit_txn().await.map_err(Into::<DbError>::into)?;
 
