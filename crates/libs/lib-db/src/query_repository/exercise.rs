@@ -53,6 +53,19 @@ pub struct UserPoints {
     pub points: f32,
 }
 
+pub struct LessonsCompletedExercises {
+    pub lessons_statistics: Vec<LessonStatistics>,
+}
+
+pub struct LessonStatistics {
+    pub lesson_id: i64,
+    pub number_of_exercises: i64,
+    pub number_of_completed_exercises: i64,
+
+    pub max_points: i64,
+    pub number_of_points: i64,
+}
+
 #[derive(Clone)]
 pub struct ExerciseQueryRepository {
     dbm: DbManager,
@@ -132,6 +145,35 @@ impl ExerciseQueryRepository {
     	Ok(entities)
     }
 
+    // pub async fn get_number_of_lessons_completed_exercises(&self, ctx: &Ctx, course_id: i64, user_id: i64) -> DbResult<()> {
+    //     let lesson_ids = self.get_course_lesson_ids(course_id).await?;
+
+    // 	let mut subquery = Query::select();
+    // 	subquery.from(Self::table_ref())
+    //     	.distinct_on([CommonIden::Id])
+    //     	.column(CommonIden::Id)
+    //     	.inner_join(
+    //         	get_exercise_completion_table_ref(), 
+    //         	Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::ExerciseId))
+    //         	.equals((ExerciseIden::Exercise, CommonIden::Id))
+    //     	)
+    //     	.and_where(Expr::col((ExerciseIden::Exercise, ExerciseIden::LessonId)).is_in(lesson_ids))
+    //     	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::UserId)).eq(user_id))
+    //     	.and_where(Expr::col((ExerciseCompletionIden::ExerciseCompletion, ExerciseCompletionIden::State)).eq("Succeeded"));
+
+    // 	let mut query = Query::select();
+    // 	query.expr(Expr::col(Alias::new("subquery")).count())
+    //     	.from_subquery(subquery, Alias::new("subquery"));
+
+    // 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+    // 	let sqlx_query = sqlx::query_scalar_with::<_, i64, _>(&sql, values);
+    // 	let entities = self.dbm.dbx().fetch_one_scalar(sqlx_query).await
+	// 		    .map_err(Into::<DbError>::into)?;
+
+    // 	Ok(entities)
+    // }
+
     pub async fn get_course_point_statistics(
         &self, 
         ctx: &Ctx, 
@@ -176,21 +218,7 @@ impl ExerciseQueryRepository {
         _: &Ctx, 
         course_id: i64
     ) -> DbResult<Vec<ExercisePoitQuery>> {
-        let mut query = Query::select();
-        query
-            .from(get_lesson_table_ref())
-            .column(CommonIden::Id)
-            .and_where(Expr::col(LessonIden::CourseId).eq(course_id));
-    
-        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-        let sqlx_query = sqlx::query_as_with::<_, Id, _>(&sql, values);
-        let lessons =
-            self.dbm.dbx()
-                .fetch_all(sqlx_query)
-                .await
-                .map_err(Into::<DbError>::into)?;
-
-        let lesson_ids: Vec<i64> = lessons.iter().map(|lesson_id| lesson_id.id).collect();
+        let lesson_ids = self.get_course_lesson_ids(course_id).await?;
 
         let mut query = Query::select();
         query
@@ -207,6 +235,24 @@ impl ExerciseQueryRepository {
                 .map_err(Into::<DbError>::into)?;
 
         Ok(exercises)
+    }
+
+    async fn get_course_lesson_ids(&self, course_id: i64) -> DbResult<Vec<i64>> {
+        let mut query = Query::select();
+        query
+            .from(get_lesson_table_ref())
+            .column(CommonIden::Id)
+            .and_where(Expr::col(LessonIden::CourseId).eq(course_id));
+    
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let sqlx_query = sqlx::query_as_with::<_, Id, _>(&sql, values);
+        let lessons =
+            self.dbm.dbx()
+                .fetch_all(sqlx_query)
+                .await
+                .map_err(Into::<DbError>::into)?;
+
+        Ok(lessons.iter().map(|lesson_id| lesson_id.id).collect())
     }
 
     fn calculate_course_max_points(&self, exercises: &Vec<ExercisePoitQuery>) -> DbResult<i64> {
