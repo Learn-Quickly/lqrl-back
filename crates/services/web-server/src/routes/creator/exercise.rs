@@ -58,7 +58,7 @@ async fn api_create_exercise_handler(
 #[utoipa::path(
 	put,
 	path = "/api/course/lesson/exercise/update",
-	request_body = LessonUpdatePayload,
+	request_body = ExerciseForUpdatePayload,
 	responses(
 		(status = 200, description = "Exercise updated successfully"),
 	),
