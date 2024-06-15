@@ -256,7 +256,7 @@ impl ILessonCommandRepository for LessonCommandRepository {
                 .in_subquery(Query::select()
                     .column(CommonIden::Id)
                     .from(LessonIden::Lesson)
-                    .and_where(Expr::col(LessonIden::LessonOrder).gt(order))
+                    .and_where(Expr::col(LessonIden::LessonOrder).eq(order))
                     .and_where(Expr::col(LessonIden::CourseId).eq(course_id))
                     .to_owned())
         );
