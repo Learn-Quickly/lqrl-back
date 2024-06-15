@@ -61,7 +61,7 @@ impl StudentExerciseInteractor {
 
         match lesson_progresses.iter().find(|lesson_progress| lesson_progress.lesson_id == lesson.id) {
             Some(lesson_progress) => {
-                if lesson_progress.state.ne(&LessonProgressState::InProgress) {
+                if lesson_progress.state.eq(&LessonProgressState::Pause) {
                     return Err(ExerciseError::LessonProgressMustBeInProgress {}.into());
                 }
             },
